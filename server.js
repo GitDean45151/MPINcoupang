@@ -476,149 +476,46 @@ function getQ2DaysFromFilename(filename) {
   return { elapsedDays, totalDays, referenceDate };
 }
 
-
-/**
- * Load Base excel sheet and local updates
- */
 function loadAndInitializeData() {
   console.log('--- Initializing Coupang Ads Dashboard Data ---');
   
-  if (!fs.existsSync(COUPANG_FILE_PATH)) {
-    console.error(`CRITICAL ERROR: 'coupang.xlsx' not found at ${COUPANG_FILE_PATH}`);
+  const compiledPath = path.join(__dirname, 'base_data_compiled.json');
+  if (!fs.existsSync(compiledPath)) {
+    console.error(`CRITICAL ERROR: 'base_data_compiled.json' not found at ${compiledPath}`);
     return;
   }
 
   try {
-    console.log(`Reading base dimensions: ${COUPANG_FILE_PATH} (This may take a moment)...`);
-    const workbook = XLSX.readFile(COUPANG_FILE_PATH);
+    console.log('Loading pre-compiled base data from JSON (Fast-start)...');
+    const compiled = JSON.parse(fs.readFileSync(compiledPath, 'utf8'));
     
-    // Parse sheet: 1Q
-    const q1Sheet = workbook.Sheets['1Q'];
-    if (q1Sheet) {
-      const q1Rows = XLSX.utils.sheet_to_json(q1Sheet, { defval: null });
-      rawSheets.q1 = q1Rows.map(row => {
-        const vendorid = String(row['업체코드'] || row['vendorid'] || '').trim();
-        return { ...row, vendorid };
-      }).filter(row => /^A\d+$/.test(row.vendorid));
-      console.log(`Loaded sheet '1Q': ${rawSheets.q1.length} cleaned rows`);
-    }
-
-    // Parse sheet: 2Q seller
-    const sellerSheet = workbook.Sheets['2Q seller'];
-    if (sellerSheet) {
-      const sellerRows = XLSX.utils.sheet_to_json(sellerSheet, { defval: null });
-      rawSheets.seller = sellerRows.map(row => {
-        const vendorid = String(row['vendor id'] || row['vendorid'] || '').trim();
-        return { ...row, vendorid };
-      }).filter(row => /^A\d+$/.test(row.vendorid));
-      console.log(`Loaded sheet '2Q seller': ${rawSheets.seller.length} cleaned rows`);
-    }
+    // Reconstruct rawSheets.q1
+    rawSheets.q1 = Object.entries(compiled.q1Vendors).map(([vendorid, v]) => ({
+      vendorid,
+      '이번 분기 광고비': v.q1Revenue,
+      '팀': v.team,
+      '마케터': v.marketer
+    }));
+    
+    // Reconstruct rawSheets.seller
+    rawSheets.seller = Object.entries(compiled.q1Vendors).map(([vendorid, v]) => ({
+      vendorid,
+      'vendor name': v.vendorName
+    }));
+    
+    q1QoqTotalFromFile = compiled.q1QoqTotalFromFile;
+    q1Group1AdSpend = compiled.q1GroupBases['group 1'];
+    q1Group2AdSpend = compiled.q1GroupBases['group 2'];
+    q1Group3AdSpend = compiled.q1GroupBases['group 3'];
+    q1Group4AdSpend = compiled.q1GroupBases['group 4'];
+    
+    mayVendorlistSet = new Set(compiled.mayVendorList);
+    
+    console.log(`Successfully loaded ${Object.keys(compiled.q1Vendors).length} vendors, Q1 bases, and ${mayVendorlistSet.size} May target vendor IDs.`);
   } catch (error) {
-    console.error('Error reading and parsing coupang.xlsx:', error);
+    console.error('Error loading compiled base data JSON:', error);
   }
 
-  // Parse Q1 Agency commission file to get Q1 QoQ base and vendor dimensions
-  const q1AgencyPath = path.join(__dirname, '2026Q1 Agency commission-MP(PA).xlsx');
-  if (fs.existsSync(q1AgencyPath)) {
-    try {
-      console.log(`Reading Q1 Agency file: ${q1AgencyPath}...`);
-      const q1Wb = XLSX.readFile(q1AgencyPath);
-      
-      // Parse summary sheet
-      const q1SummarySheet = q1Wb.Sheets['Total summary'];
-      if (q1SummarySheet) {
-        const q1SummaryRows = XLSX.utils.sheet_to_json(q1SummarySheet);
-        let sumQoq = 0;
-        
-        let g1New = 0;
-        let g2New = 0, g2Qoq = 0;
-        let g3Qoq = 0;
-        let g4Qoq = 0;
-
-        q1SummaryRows.forEach(row => {
-          const group = String(row['커미션 그룹'] || '').trim();
-          const val = Number(row['QoQ growth 벤더 이번 분기 광고비']) || 0;
-          if (group === 'group 2' || group === 'group 3') {
-            sumQoq += val;
-          }
-
-          const newVendorsAdSpend = Number(row['90일 이내 신규/재활성화 벤더 광고비']) || 0;
-          const qoqAdSpend = Number(row['QoQ growth 수수료 대상 광고비']) || 0;
-          
-          if (group === 'group 1') {
-            g1New = newVendorsAdSpend;
-          } else if (group === 'group 2') {
-            g2New = newVendorsAdSpend;
-            g2Qoq = qoqAdSpend;
-          } else if (group === 'group 3') {
-            g3Qoq = qoqAdSpend;
-          } else if (group === 'group 4') {
-            g4Qoq = qoqAdSpend;
-          }
-        });
-        if (sumQoq > 0) {
-          q1QoqTotalFromFile = sumQoq;
-          console.log(`Q1 QoQ base loaded from Q1 Agency file: ${q1QoqTotalFromFile}`);
-        }
-
-        if (g1New > 0) q1Group1AdSpend = g1New;
-        if (g2New > 0 || g2Qoq > 0) q1Group2AdSpend = g2New + g2Qoq;
-        if (g3Qoq > 0) q1Group3AdSpend = g3Qoq;
-        if (g4Qoq > 0) q1Group4AdSpend = g4Qoq;
-
-        console.log(`Chart Q1 bases loaded dynamically: G1=${q1Group1AdSpend}, G2=${q1Group2AdSpend}, G3=${q1Group3AdSpend}, G4=${q1Group4AdSpend}`);
-      }
-
-      // Load and cache Q1 Vendor level columns for baseline calculation
-      const q1VendorSheet = q1Wb.Sheets['Vendor level'];
-      if (q1VendorSheet) {
-        const q1VendorRows = XLSX.utils.sheet_to_json(q1VendorSheet, { header: 1, defval: '' });
-        const q1HeaderRow = q1VendorRows[0];
-        const vendorColIdx = q1HeaderRow.indexOf('업체코드');
-        const colPIdx = q1HeaderRow.indexOf('이번 분기 광고비');
-        const colQIdx = q1HeaderRow.indexOf('이번 분기 권한 설정 광고비');
-        
-        q1VendorLevelData = {};
-        for (let i = 1; i < q1VendorRows.length; i++) {
-          const row = q1VendorRows[i];
-          const vendorId = String(row[vendorColIdx] || '').trim();
-          if (vendorId && /^A\d+$/.test(vendorId)) {
-            q1VendorLevelData[vendorId] = {
-              q1AdSpend: Number(row[colPIdx]) || 0,
-              q1ColQ: Number(row[colQIdx]) || 0
-            };
-          }
-        }
-        console.log(`Cached Q1 Vendor level data for ${Object.keys(q1VendorLevelData).length} vendors.`);
-      }
-    } catch (err) {
-      console.error('Error reading Q1 Agency file:', err.message);
-    }
-  }
-
-  // Parse May vendorlist file
-  const mayVendorlistPath = path.join(__dirname, '2026_Q2_May_vendorlist_MP.xlsx');
-  if (fs.existsSync(mayVendorlistPath)) {
-    try {
-      console.log(`Reading May vendorlist file: ${mayVendorlistPath}...`);
-      const mayWb = XLSX.readFile(mayVendorlistPath);
-      const maySheet = mayWb.Sheets[mayWb.SheetNames[0]];
-      const mayRows = XLSX.utils.sheet_to_json(maySheet, { header: 1, defval: '' });
-      const mayHeader = mayRows[1];
-      const mayVendorColIdx = mayHeader.indexOf('vendor id') !== -1 ? mayHeader.indexOf('vendor id') : mayHeader.indexOf('vender id');
-      
-      mayVendorlistSet = new Set();
-      for (let i = 2; i < mayRows.length; i++) {
-        const vId = String(mayRows[i][mayVendorColIdx] || '').trim();
-        if (/^A\d+$/.test(vId)) {
-          mayVendorlistSet.add(vId);
-        }
-      }
-      console.log(`Loaded ${mayVendorlistSet.size} target vendor IDs from May vendor list.`);
-    } catch (err) {
-      console.error('Error reading May vendorlist file:', err.message);
-    }
-  }
 
   // Load Fact Table (either latest uploaded or default 260515_MP.xlsx)
   const latestSalesPath = LATEST_SALES_PATH;
