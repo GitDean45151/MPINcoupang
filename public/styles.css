@@ -69,8 +69,8 @@ body {
   background: var(--bg-gradient);
   background-attachment: fixed;
   color: var(--text-primary);
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow-x: hidden;
   transition: var(--transition-smooth);
 }
 
@@ -102,11 +102,10 @@ body.light-mode ::-webkit-scrollbar-thumb:hover {
 .app-wrapper {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  padding: 12px 16px;
+  min-height: 100vh;
+  padding: 20px;
   max-width: 1820px;
   margin: 0 auto;
-  overflow: hidden;
 }
 
 /* Header */
@@ -114,14 +113,14 @@ body.light-mode ::-webkit-scrollbar-thumb:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
+  padding: 16px 24px;
   background: var(--panel-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: var(--card-border);
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: var(--card-shadow);
-  margin-bottom: 10px;
+  margin-bottom: 20px;
   transition: var(--transition-smooth);
 }
 
@@ -161,10 +160,9 @@ body.light-mode ::-webkit-scrollbar-thumb:hover {
 /* Main Layout Grid */
 .main-layout {
   display: flex;
-  gap: 12px;
+  gap: 20px;
   flex: 1;
   align-items: stretch;
-  min-height: 0;
 }
 
 @media (max-width: 1200px) {
@@ -192,10 +190,6 @@ body.light-mode ::-webkit-scrollbar-thumb:hover {
 .content-panel {
   flex: 1;
   min-width: 0; /* Prevents flex children from breaking width */
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
 }
 
 /* ==========================================================================
@@ -210,6 +204,7 @@ body.light-mode ::-webkit-scrollbar-thumb:hover {
   box-shadow: var(--card-shadow);
   padding: 24px;
   transition: var(--transition-smooth);
+  margin-bottom: 20px;
 }
 
 .card-header {
@@ -582,7 +577,7 @@ body.light-mode .mock-data-card {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
+  min-height: 400px;
   background: var(--panel-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -620,9 +615,7 @@ body.light-mode .mock-data-card {
 .dashboard-grid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  flex: 1;
-  min-height: 0;
+  gap: 20px;
 }
 
 /* ==========================================================================
@@ -630,16 +623,16 @@ body.light-mode .mock-data-card {
    ========================================================================== */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
 }
 
 .kpi-card {
   background: var(--card-bg);
   border: var(--card-border);
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: var(--card-shadow);
-  padding: 10px 14px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -648,7 +641,7 @@ body.light-mode .mock-data-card {
 }
 
 .kpi-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
   border-color: rgba(255, 255, 255, 0.15);
 }
 body.light-mode .kpi-card:hover {
@@ -659,20 +652,20 @@ body.light-mode .kpi-card:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-secondary);
   font-weight: 600;
 }
 
 .kpi-icon {
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .kpi-value {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 800;
-  margin-top: 4px;
+  margin-top: 10px;
   letter-spacing: -0.5px;
 }
 
@@ -685,9 +678,9 @@ body.light-mode .kpi-card:hover {
 }
 
 .kpi-sub {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
-  margin-top: 2px;
+  margin-top: 6px;
   font-weight: 500;
 }
 
@@ -703,25 +696,20 @@ body.light-mode .kpi-card:hover {
    ========================================================================== */
 .vis-grid {
   display: grid;
-  grid-template-columns: 1fr 1.2fr;
-  gap: 12px;
-  height: 280px;
-  min-height: 0;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
 }
 
 @media (max-width: 1400px) {
   .vis-grid {
     grid-template-columns: 1fr;
-    height: auto;
   }
 }
 
 .chart-card {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  padding: 14px 18px;
+  min-height: 380px;
 }
 
 .chart-container {
@@ -729,25 +717,22 @@ body.light-mode .kpi-card:hover {
   flex: 1;
   width: 100%;
   height: 100%;
-  min-height: 0;
 }
 
 .pivot-card {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  padding: 14px 18px;
+  min-height: 380px;
 }
 
 .pivot-wrapper {
   flex: 1;
   overflow-x: auto;
   overflow-y: auto;
-  margin-top: 6px;
+  max-height: 320px;
+  margin-top: 10px;
   border-radius: 8px;
   border: var(--card-border);
-  min-height: 0;
 }
 
 .pivot-table {
@@ -757,8 +742,13 @@ body.light-mode .kpi-card:hover {
 }
 
 .pivot-table th, .pivot-table td,
-.data-grid th, .data-grid td {
+.data-grid td {
   white-space: nowrap !important;
+}
+
+.data-grid th {
+  white-space: normal !important;
+  vertical-align: bottom;
 }
 
 .sortable {
@@ -852,9 +842,6 @@ body.light-mode .pivot-row-team {
 .grid-card {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  padding: 14px 18px;
 }
 
 .grid-header-actions {
@@ -862,8 +849,8 @@ body.light-mode .pivot-row-team {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
 .grid-controls {
@@ -920,12 +907,9 @@ body.light-mode .grid-controls select {
 }
 
 .grid-wrapper {
-  flex: 1;
   overflow-x: auto;
-  overflow-y: auto;
   border-radius: 12px;
   border: var(--card-border);
-  min-height: 0;
 }
 
 .data-grid {
@@ -940,8 +924,9 @@ body.light-mode .grid-controls select {
   font-family: var(--font-label);
   font-weight: 600;
   color: var(--text-primary);
-  padding: 12px 16px;
+  padding: 6px 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 11px;
 }
 body.light-mode .data-grid th {
   background: rgba(0, 0, 0, 0.05);
@@ -949,9 +934,10 @@ body.light-mode .data-grid th {
 }
 
 .data-grid td {
-  padding: 12px 16px;
+  padding: 6px 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   color: var(--text-secondary);
+  font-size: 11px;
 }
 body.light-mode .data-grid td {
   border-bottom-color: rgba(0, 0, 0, 0.04);
@@ -1092,8 +1078,8 @@ body.light-mode .btn-pagination-nav:hover:not(:disabled) {
 .kpi-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 0;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
 .kpi-grid.expected-row {
