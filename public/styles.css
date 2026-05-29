@@ -908,8 +908,6 @@ body.light-mode .grid-controls select {
 
 .grid-wrapper {
   overflow-x: auto;
-  overflow-y: auto;
-  max-height: 385px;
   border-radius: 12px;
   border: var(--card-border);
 }
@@ -922,19 +920,16 @@ body.light-mode .grid-controls select {
 }
 
 .data-grid th {
-  background: rgba(18, 17, 50, 0.98);
+  background: rgba(0, 0, 0, 0.25);
   font-family: var(--font-label);
   font-weight: 600;
   color: var(--text-primary);
   padding: 6px 3px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 13.5px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
 body.light-mode .data-grid th {
-  background: rgba(241, 245, 249, 0.98);
+  background: rgba(0, 0, 0, 0.05);
   border-bottom-color: rgba(0, 0, 0, 0.1);
 }
 

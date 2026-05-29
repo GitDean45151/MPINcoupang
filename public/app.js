@@ -26,6 +26,10 @@ let q2ElapsedDays = 0;
 let pivotSortColumn = 'incentive';
 let pivotSortAsc = false;
 
+// Detailed grid sorting state
+let gridSortColumn = 'vendorId';
+let gridSortAsc = true;
+
 // Pagination config
 let currentPage = 1;
 const rowsPerPage = 100;
@@ -213,6 +217,23 @@ function initEventListeners() {
         pivotSortAsc = false; // default descending on new column
       }
       renderPivotTable();
+    });
+  });
+
+  // Grid sorting headers
+  const gridHeaders = document.querySelectorAll('#grid-header-row th.sortable');
+  gridHeaders.forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if (gridSortColumn === col) {
+        gridSortAsc = !gridSortAsc;
+      } else {
+        gridSortColumn = col;
+        // String columns: default asc. Numeric columns: default desc.
+        const numericCols = ['q1Revenue', 'q2Revenue', 'progress', 'commission15', 'qoqCommissionRate', 'expectedQoqCommission', 'marketerIncentiveRate', 'expectedMarketerIncentive'];
+        gridSortAsc = !numericCols.includes(col);
+      }
+      renderDataGrid();
     });
   });
 }
@@ -719,6 +740,42 @@ function renderPivotTable() {
 
 // Render paginated detailed Data Grid
 function renderDataGrid() {
+  // Update Header Sort Icons
+  const gridHeaders = document.querySelectorAll('#grid-header-row th.sortable');
+  gridHeaders.forEach(th => {
+    const icon = th.querySelector('.sort-icon');
+    if (icon) {
+      if (th.dataset.sort === gridSortColumn) {
+        icon.textContent = gridSortAsc ? ' ▲' : ' ▼';
+        th.classList.add('sorted');
+      } else {
+        icon.textContent = '';
+        th.classList.remove('sorted');
+      }
+    }
+  });
+
+  // Sort filteredRecords
+  filteredRecords.sort((a, b) => {
+    let valA = a[gridSortColumn];
+    let valB = b[gridSortColumn];
+
+    // Special progress calculation handling
+    if (gridSortColumn === 'progress') {
+      valA = a.q1Revenue > 0 ? (a.q2Revenue / a.q1Revenue * 100) : (a.q2Revenue > 0 ? 100 : 0);
+      valB = b.q1Revenue > 0 ? (b.q2Revenue / b.q1Revenue * 100) : (b.q2Revenue > 0 ? 100 : 0);
+    }
+
+    if (valA === undefined || valA === null) valA = '';
+    if (valB === undefined || valB === null) valB = '';
+
+    if (typeof valA === 'string') {
+      return gridSortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    } else {
+      return gridSortAsc ? valA - valB : valB - valA;
+    }
+  });
+
   const tbody = document.getElementById('grid-table-body');
   tbody.innerHTML = '';
 

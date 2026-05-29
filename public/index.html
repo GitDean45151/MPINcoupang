@@ -216,22 +216,22 @@
               <div class="grid-wrapper">
                 <table class="data-grid">
                   <thead>
-                    <tr>
-                      <th>vendorid</th>
-                      <th>업체명</th>
-                      <th>팀</th>
-                      <th>마케터</th>
-                      <th>커미션 그룹</th>
-                      <th class="text-right">1Q 매출</th>
-                      <th class="text-right">2Q 매출</th>
-                      <th class="text-right">매출 진도율</th>
-                      <th class="text-center">신규대상</th>
-                      <th class="text-right">신규 수수료</th>
-                      <th class="text-center">QoQ 대상</th>
-                      <th class="text-right">QoQ 수수료율</th>
-                      <th class="text-right">QoQ 수수료액</th>
-                      <th class="text-right">인센티브율</th>
-                      <th class="text-right">마케터 인센티브액</th>
+                    <tr id="grid-header-row">
+                      <th data-sort="vendorId" class="sortable">vendorid <span class="sort-icon"></span></th>
+                      <th data-sort="vendorName" class="sortable">업체명 <span class="sort-icon"></span></th>
+                      <th data-sort="team" class="sortable">팀 <span class="sort-icon"></span></th>
+                      <th data-sort="marketer" class="sortable">마케터 <span class="sort-icon"></span></th>
+                      <th data-sort="commissionGroup" class="sortable text-center">커미션 그룹 <span class="sort-icon"></span></th>
+                      <th data-sort="q1Revenue" class="sortable text-right">1Q 매출 <span class="sort-icon"></span></th>
+                      <th data-sort="q2Revenue" class="sortable text-right">2Q 매출 <span class="sort-icon"></span></th>
+                      <th data-sort="progress" class="sortable text-right">매출 진도율 <span class="sort-icon"></span></th>
+                      <th data-sort="isNewCommission" class="sortable text-center">신규대상 <span class="sort-icon"></span></th>
+                      <th data-sort="commission15" class="sortable text-right">신규 수수료 <span class="sort-icon"></span></th>
+                      <th data-sort="isQoqEligible" class="sortable text-center">QoQ 대상 <span class="sort-icon"></span></th>
+                      <th data-sort="qoqCommissionRate" class="sortable text-right">QoQ 수수료율 <span class="sort-icon"></span></th>
+                      <th data-sort="expectedQoqCommission" class="sortable text-right">QoQ 수수료액 <span class="sort-icon"></span></th>
+                      <th data-sort="marketerIncentiveRate" class="sortable text-right">인센티브율 <span class="sort-icon"></span></th>
+                      <th data-sort="expectedMarketerIncentive" class="sortable text-right">마케터 인센티브액 <span class="sort-icon"></span></th>
                     </tr>
                   </thead>
                   <tbody id="grid-table-body">
