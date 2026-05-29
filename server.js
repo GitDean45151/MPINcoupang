@@ -22,12 +22,22 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(publicPath));
 
+const isVercel = process.env.VERCEL || process.env.NOW_BUILDER;
+const uploadsDir = isVercel ? '/tmp/uploads' : path.join(__dirname, 'uploads');
+
+// Create uploads folder if not exists
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 // Configure multer for temp file uploads
-const upload = multer({ dest: path.join(__dirname, 'uploads/') });
+const upload = multer({ dest: uploadsDir });
 
 // Constants for file paths
 const COUPANG_FILE_PATH = path.join(__dirname, 'coupang.xlsx');
-const UPDATES_FILE_PATH = path.join(__dirname, 'updated_records.json');
+const UPDATES_FILE_PATH = path.join(uploadsDir, 'updated_records.json');
+const LATEST_SALES_PATH = path.join(uploadsDir, 'latest_sales.xlsx');
+const METADATA_PATH = path.join(uploadsDir, 'metadata.json');
 
 // In-memory cache of parsed sheets and joined records
 let rawSheets = {
@@ -611,7 +621,7 @@ function loadAndInitializeData() {
   }
 
   // Load Fact Table (either latest uploaded or default 260515_MP.xlsx)
-  const latestSalesPath = path.join(__dirname, 'uploads', 'latest_sales.xlsx');
+  const latestSalesPath = LATEST_SALES_PATH;
   let factFilePath = COUPANG_FILE_PATH; // fallback
   let factLoaded = false;
   let filenameForDate = '260515_MP.xlsx'; // default fallback
@@ -621,7 +631,7 @@ function loadAndInitializeData() {
     console.log(`Found uploaded sales update at ${latestSalesPath}`);
 
     // Read original name from metadata.json
-    const metadataPath = path.join(__dirname, 'uploads', 'metadata.json');
+    const metadataPath = METADATA_PATH;
     if (fs.existsSync(metadataPath)) {
       try {
         const meta = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
@@ -689,11 +699,7 @@ function loadAndInitializeData() {
 // Perform initial data loading
 loadAndInitializeData();
 
-// Create uploads folder if not exists
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
-}
+// Dynamic uploadsDir handles folder creation above
 
 // ----------------------------------------------------
 // API ENDPOINTS
@@ -707,7 +713,7 @@ app.get('/api/base-data', (req, res) => {
   if (rawSheets.q1.length === 0 || rawSheets.seller.length === 0) {
     return res.status(500).json({ error: 'Base data not loaded or failed to parse coupang.xlsx' });
   }
-  const latestSalesPath = path.join(__dirname, 'uploads', 'latest_sales.xlsx');
+  const latestSalesPath = LATEST_SALES_PATH;
   const hasUpload = fs.existsSync(latestSalesPath);
   res.json({
     records: joinedRecords,
@@ -744,7 +750,7 @@ app.post('/api/upload-update', upload.single('updateFile'), (req, res) => {
   }
 
   const filePath = req.file.path;
-  const targetPath = path.join(__dirname, 'uploads', 'latest_sales.xlsx');
+  const targetPath = LATEST_SALES_PATH;
   
   try {
     console.log(`Processing uploaded sales file: ${req.file.originalname}`);
@@ -759,7 +765,7 @@ app.post('/api/upload-update', upload.single('updateFile'), (req, res) => {
     fs.renameSync(filePath, targetPath);
 
     // Save original filename to metadata
-    const metadataPath = path.join(__dirname, 'uploads', 'metadata.json');
+    const metadataPath = METADATA_PATH;
     try {
       fs.writeFileSync(metadataPath, JSON.stringify({ originalName: req.file.originalname }), 'utf8');
     } catch (errMeta) {
@@ -830,7 +836,7 @@ app.post('/api/upload-update', upload.single('updateFile'), (req, res) => {
  */
 app.post('/api/reset-updates', (req, res) => {
   try {
-    const latestSalesPath = path.join(__dirname, 'uploads', 'latest_sales.xlsx');
+    const latestSalesPath = LATEST_SALES_PATH;
     if (fs.existsSync(latestSalesPath)) {
       fs.unlinkSync(latestSalesPath);
     }
@@ -865,8 +871,12 @@ app.post('/api/reset-updates', (req, res) => {
   }
 });
 
-// Start Express Server
-app.listen(port, () => {
-  console.log(`Coupang Ads Dashboard backend listening at http://localhost:${port}`);
-});
+// Start Express Server only if not in Vercel serverless environment
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log(`Coupang Ads Dashboard backend listening at http://localhost:${port}`);
+  });
+}
+
+export default app;
 
