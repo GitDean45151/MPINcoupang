@@ -213,13 +213,13 @@ function performJoinsAndCalculations() {
     
     // 15% new commission: Group 1, Group 2: [2Q 90일 커미션대상 광고비] * 0.15 (rest are 0)
     const isNewCommission = ['group 1', 'group 2'].includes(vendor.commissionGroup);
-    const commission15 = isNewCommission ? vendor.q290DayRevenue * 0.15 : 0;
+    const commission15 = isNewCommission ? vendor.q290DayRevenue * 0.05 : 0; // marketer 5% new commission
     
     // QoQ Commission eligibility
     const isQoqEligible = ['group 2', 'group 3', 'group 4'].includes(vendor.commissionGroup);
     
     // Expected calculated amounts (using agency-wide rates)
-    const expectedQoqCommission = isQoqEligible ? vendor.q2QoqRevenue * agencyQoqRate : 0;
+    const expectedQoqCommission = isQoqEligible ? vendor.q2QoqRevenue * agencyIncentiveRate : 0; // marketer QoQ commission
 
     // Marketer incentives:
     // 1) New commission: 5% of New Target sales (comm90Target * 0.05) paid regardless of growth
@@ -246,7 +246,7 @@ function performJoinsAndCalculations() {
       isNewCommission,
       commission15, // agency 15% new commission
       isQoqEligible,
-      qoqCommissionRate: agencyQoqRate,
+      qoqCommissionRate: agencyIncentiveRate, // QoQ commission rate set to marketer commission rate
       expectedQoqCommission, // agency QoQ commission
       marketerIncentiveRate: agencyIncentiveRate,
       marketerNewIncentive,

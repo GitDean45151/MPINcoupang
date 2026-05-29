@@ -230,7 +230,7 @@ function initEventListeners() {
       } else {
         gridSortColumn = col;
         // String columns: default asc. Numeric columns: default desc.
-        const numericCols = ['q1Revenue', 'q2Revenue', 'progress', 'commission15', 'qoqCommissionRate', 'expectedQoqCommission', 'marketerIncentiveRate', 'expectedMarketerIncentive'];
+        const numericCols = ['q1Revenue', 'q2Revenue', 'progress', 'paceStatus', 'commission15', 'qoqCommissionRate', 'expectedQoqCommission', 'marketerIncentiveRate', 'expectedMarketerIncentive'];
         gridSortAsc = !numericCols.includes(col);
       }
       renderDataGrid();
@@ -445,9 +445,7 @@ function renderKpis() {
   document.getElementById('val-2q-rev').textContent = formatKRW(agencyQ2QoqTotal);
   document.getElementById('val-expected-1q-rev').textContent = formatKRW(expectedQ1QoqTotal);
   document.getElementById('val-expected-2q-rev').textContent = formatKRW(expectedQ2QoqTotal);
-  document.getElementById('val-company-fees').textContent = formatKRW(companyTotalFees);
-  document.getElementById('val-company-fees-detail').textContent = 
-    `신규15%: ${formatKRW(total15Commission)} | QoQ: ${formatKRW(totalQoqCommission)}`;
+  // Removed company total fee calculations for marketer dashboard
     
   document.getElementById('val-marketer-incentive').textContent = formatKRW(totalIncentive);
 }
@@ -761,9 +759,9 @@ function renderDataGrid() {
     let valB = b[gridSortColumn];
 
     // Special progress calculation handling
-    if (gridSortColumn === 'progress') {
-      valA = a.q1Revenue > 0 ? (a.q2Revenue / a.q1Revenue * 100) : (a.q2Revenue > 0 ? 100 : 0);
-      valB = b.q1Revenue > 0 ? (b.q2Revenue / b.q1Revenue * 100) : (b.q2Revenue > 0 ? 100 : 0);
+    if (gridSortColumn === 'progress' || gridSortColumn === 'paceStatus') {
+      valA = a.q1Revenue > 0 ? (a.q2Revenue / a.q1Revenue * 100) : (a.q2Revenue > 0 ? 100.0 : 0.0);
+      valB = b.q1Revenue > 0 ? (b.q2Revenue / b.q1Revenue * 100) : (b.q2Revenue > 0 ? 100.0 : 0.0);
     }
 
     if (valA === undefined || valA === null) valA = '';
@@ -813,7 +811,12 @@ function renderDataGrid() {
       tr.style.borderLeft = '4px solid var(--success)';
     }
 
+    const progressPercent = r.q1Revenue > 0 ? (r.q2Revenue / r.q1Revenue * 100) : (r.q2Revenue > 0 ? 100.0 : 0.0);
+    const pacePercent = (q2ElapsedDays / 90) * 100;
+    const paceStatus = progressPercent >= pacePercent ? '🟢' : '🔴';
+
     tr.innerHTML = `
+      <td class="text-center">${paceStatus}</td>
       <td>${r.vendorId}</td>
       <td style="font-weight: 500;">${r.vendorName}</td>
       <td>${r.team}</td>
@@ -847,24 +850,30 @@ function exportToExcel() {
 
   showLoading('엑셀 파일 생성 중...');
   
-  const exportData = filteredRecords.map(r => ({
-    '벤더 ID': r.vendorId,
-    '업체명': r.vendorName,
-    '팀': r.team,
-    '마케터': r.marketer,
-    '커미션 그룹': r.commissionGroup,
-    '1Q 매출': r.q1Revenue,
-    '2Q 매출': r.q2Revenue,
-    '매출 증감액': r.growthAmount,
-    '매출 진도율(%)': Number((r.q1Revenue > 0 ? (r.q2Revenue / r.q1Revenue * 100) : (r.q2Revenue > 0 ? 100.0 : 0.0)).toFixed(2)),
-    '신규대상': r.isNewCommission ? '지급(O)' : '미지급(X)',
-    '신규 수수료': r.commission15,
-    'QoQ 대상': r.isQoqEligible ? '지급(O)' : '미지급(X)',
-    'QoQ 수수료율(%)': r.qoqCommissionRate * 100,
-    'QoQ 수수료액': r.expectedQoqCommission,
-    '인센티브율(%)': r.marketerIncentiveRate * 100,
-    '마케터 인센티브액': r.expectedMarketerIncentive
-  }));
+  const exportData = filteredRecords.map(r => {
+    const progressPercent = r.q1Revenue > 0 ? (r.q2Revenue / r.q1Revenue * 100) : (r.q2Revenue > 0 ? 100.0 : 0.0);
+    const pacePercent = (q2ElapsedDays / 90) * 100;
+    const paceStatus = progressPercent >= pacePercent ? '🟢' : '🔴';
+    return {
+      '페이스 현황': paceStatus,
+      '벤더 ID': r.vendorId,
+      '업체명': r.vendorName,
+      '팀': r.team,
+      '마케터': r.marketer,
+      '커미션 그룹': r.commissionGroup,
+      '1Q 매출': r.q1Revenue,
+      '2Q 매출': r.q2Revenue,
+      '매출 증감액': r.growthAmount,
+      '매출 진도율(%)': Number(progressPercent.toFixed(2)),
+      '신규대상': r.isNewCommission ? '지급(O)' : '미지급(X)',
+      '신규 수수료': r.commission15,
+      'QoQ 대상': r.isQoqEligible ? '지급(O)' : '미지급(X)',
+      'QoQ 수수료율(%)': r.qoqCommissionRate * 100,
+      'QoQ 수수료액': r.expectedQoqCommission,
+      '인센티브율(%)': r.marketerIncentiveRate * 100,
+      '마케터 인센티브액': r.expectedMarketerIncentive
+    };
+  });
 
   const worksheet = XLSX.utils.json_to_sheet(exportData);
   const workbook = XLSX.utils.book_new();

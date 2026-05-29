@@ -1087,7 +1087,7 @@ body.light-mode .btn-pagination-nav:hover:not(:disabled) {
 }
 
 .kpi-grid.actual-row {
-  grid-template-columns: repeat(5, 1fr) !important;
+  grid-template-columns: repeat(4, 1fr) !important;
 }
 
 @media (max-width: 1200px) {
