@@ -37,12 +37,6 @@ const rowsPerPage = 100;
 // Initialize Dashboard
 document.addEventListener('DOMContentLoaded', async () => {
   initEventListeners();
-  // Automatically reset the server's update state on load/refresh
-  try {
-    await fetch('/api/reset-updates', { method: 'POST' });
-  } catch (err) {
-    console.error('Initial reset failed:', err);
-  }
   await fetchBaseData();
 });
 
