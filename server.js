@@ -374,6 +374,42 @@ function preprocessSalesFile(filePath) {
 }
 
 /**
+ * Extracts currentQ1QoqTotal dynamically from the summary section of the Q2 sales file
+ */
+function extractCurrentQ1QoqTotal(filePath) {
+  try {
+    const workbook = XLSX.readFile(filePath);
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+    let actualColIdx = -1;
+    for (let r = 0; r < Math.min(10, rows.length); r++) {
+      const row = rows[r];
+      for (let c = 0; c < row.length; c++) {
+        const val = String(row[c]).trim();
+        if (val.includes('% QoQ PA growth (QTD) (actual)')) {
+          actualColIdx = c;
+          break;
+        }
+      }
+      if (actualColIdx !== -1) {
+        if (rows[r + 1]) {
+          const rawVal = Number(rows[r + 1][actualColIdx]);
+          if (!isNaN(rawVal) && rawVal > 0) {
+            return rawVal;
+          }
+        }
+        break;
+      }
+    }
+  } catch (err) {
+    console.warn(`Could not extract currentQ1QoqTotal dynamically from ${filePath}:`, err.message);
+  }
+  return null;
+}
+
+
+/**
  * Load Base excel sheet and local updates
  */
 function loadAndInitializeData() {
@@ -551,34 +587,10 @@ function loadAndInitializeData() {
       rawSheets.q2 = preprocessSalesFile(factFilePath);
 
       // Extract currentQ1QoqTotal dynamically from the summary section of the Q2 sales file
-      try {
-        const workbook = XLSX.readFile(factFilePath);
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
-        let actualColIdx = -1;
-        for (let r = 0; r < Math.min(10, rows.length); r++) {
-          const row = rows[r];
-          for (let c = 0; c < row.length; c++) {
-            const val = String(row[c]).trim();
-            if (val.includes('% QoQ PA growth (QTD) (actual)')) {
-              actualColIdx = c;
-              break;
-            }
-          }
-          if (actualColIdx !== -1) {
-            if (rows[r + 1]) {
-              const rawVal = Number(rows[r + 1][actualColIdx]);
-              if (!isNaN(rawVal) && rawVal > 0) {
-                currentQ1QoqTotal = rawVal;
-                console.log(`Found currentQ1QoqTotal dynamically: ${currentQ1QoqTotal}`);
-              }
-            }
-            break;
-          }
-        }
-      } catch (errVal) {
-        console.warn('Could not extract currentQ1QoqTotal dynamically, using default fallback.', errVal.message);
+      const dynamicQ1 = extractCurrentQ1QoqTotal(factFilePath);
+      if (dynamicQ1 !== null) {
+        currentQ1QoqTotal = dynamicQ1;
+        console.log(`Found currentQ1QoqTotal dynamically: ${currentQ1QoqTotal}`);
       }
 
       factLoaded = true;
@@ -666,6 +678,13 @@ app.post('/api/upload-update', upload.single('updateFile'), (req, res) => {
     // Set Fact Table in memory
     rawSheets.q2 = preprocessedRows;
     
+    // Extract currentQ1QoqTotal dynamically from the uploaded file
+    const dynamicQ1 = extractCurrentQ1QoqTotal(targetPath);
+    if (dynamicQ1 !== null) {
+      currentQ1QoqTotal = dynamicQ1;
+      console.log(`Updated currentQ1QoqTotal dynamically from upload: ${currentQ1QoqTotal}`);
+    }
+
     // Perform joins and calculations
     performJoinsAndCalculations();
     
