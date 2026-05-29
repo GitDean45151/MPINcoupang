@@ -21,6 +21,7 @@ let q1ChartValues = {
 };
 let q2ReferenceDate = '260513';
 let q2ElapsedDays = 0;
+let q2TotalDays = 91;
 
 // Pivot table sorting state
 let pivotSortColumn = 'incentive';
@@ -65,6 +66,7 @@ async function fetchBaseData() {
       q2ReferenceDate = data.q2ReferenceDate;
     }
     q2ElapsedDays = data.q2ElapsedDays !== undefined ? data.q2ElapsedDays : 0;
+    q2TotalDays = data.q2TotalDays !== undefined ? data.q2TotalDays : 91;
     updatePaceUI();
     
     updateDbStatusUI(data.totalUpdatesCount, data.lastUpdated);
@@ -230,6 +232,57 @@ function initEventListeners() {
       renderDataGrid();
     });
   });
+
+  // Landing Page File Upload Elements
+  const landingUploadZone = document.getElementById('landing-upload-zone');
+  const landingFileInput = document.getElementById('landing-file-input');
+  const landingUploadTriggerBtn = document.getElementById('btn-landing-upload-trigger');
+
+  if (landingUploadTriggerBtn && landingFileInput) {
+    landingUploadTriggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      landingFileInput.click();
+    });
+  }
+
+  if (landingUploadZone && landingFileInput) {
+    landingUploadZone.addEventListener('click', () => {
+      landingFileInput.click();
+    });
+
+    landingFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        await handleSalesUpdateUpload(file);
+      }
+    });
+
+    landingUploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      landingUploadZone.classList.add('dragover');
+    });
+
+    landingUploadZone.addEventListener('dragleave', () => {
+      landingUploadZone.classList.remove('dragover');
+    });
+
+    landingUploadZone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      landingUploadZone.classList.remove('dragover');
+      
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!['csv', 'xlsx', 'xls'].includes(ext)) {
+        alert('지원되지 않는 형식 (.csv, .xlsx, .xls)');
+        return;
+      }
+
+      landingFileInput.files = e.dataTransfer.files;
+      await handleSalesUpdateUpload(file);
+    });
+  }
 }
 
 // Upload the sales update file to the backend
@@ -260,6 +313,7 @@ async function handleSalesUpdateUpload(file) {
     expectedQ1QoqTotal = data.expectedQ1QoqTotal !== undefined ? data.expectedQ1QoqTotal : 0;
     expectedQ2QoqTotal = data.expectedQ2QoqTotal !== undefined ? data.expectedQ2QoqTotal : 0;
     q2ElapsedDays = data.q2ElapsedDays !== undefined ? data.q2ElapsedDays : 0;
+    q2TotalDays = data.q2TotalDays !== undefined ? data.q2TotalDays : 91;
     if (data.q1ChartValues) {
       q1ChartValues = data.q1ChartValues;
     }
@@ -308,6 +362,7 @@ async function handleResetUpdates() {
     expectedQ1QoqTotal = data.expectedQ1QoqTotal !== undefined ? data.expectedQ1QoqTotal : 0;
     expectedQ2QoqTotal = data.expectedQ2QoqTotal !== undefined ? data.expectedQ2QoqTotal : 0;
     q2ElapsedDays = data.q2ElapsedDays !== undefined ? data.q2ElapsedDays : 0;
+    q2TotalDays = data.q2TotalDays !== undefined ? data.q2TotalDays : 91;
     if (data.q1ChartValues) {
       q1ChartValues = data.q1ChartValues;
     }
@@ -350,8 +405,25 @@ function showUploadStatusCard(isSuccess, fileName, message) {
   infoEl.textContent = message;
 }
 
+function updateViewVisibility() {
+  const landingView = document.getElementById('upload-landing-view');
+  const mainLayout = document.getElementById('main-layout');
+  const headerUpload = document.querySelector('.header-upload-section');
+
+  if (joinedRecords && joinedRecords.length > 0) {
+    if (landingView) landingView.classList.add('hidden');
+    if (mainLayout) mainLayout.classList.remove('hidden');
+    if (headerUpload) headerUpload.classList.remove('hidden');
+  } else {
+    if (landingView) landingView.classList.remove('hidden');
+    if (mainLayout) mainLayout.classList.add('hidden');
+    if (headerUpload) headerUpload.classList.add('hidden');
+  }
+}
+
 // Refresh all components in dashboard
 function renderDashboard() {
+  updateViewVisibility();
   renderKpis();
   renderChart();
   renderPivotTable();
@@ -806,7 +878,7 @@ function renderDataGrid() {
     }
 
     const progressPercent = r.q1Revenue > 0 ? (r.q2Revenue / r.q1Revenue * 100) : (r.q2Revenue > 0 ? 100.0 : 0.0);
-    const pacePercent = (q2ElapsedDays / 90) * 100;
+    const pacePercent = q2TotalDays > 0 ? (q2ElapsedDays / q2TotalDays) * 100 : 0;
     const paceStatus = progressPercent >= pacePercent ? '🟢' : '🔴';
 
     tr.innerHTML = `
@@ -846,7 +918,7 @@ function exportToExcel() {
   
   const exportData = filteredRecords.map(r => {
     const progressPercent = r.q1Revenue > 0 ? (r.q2Revenue / r.q1Revenue * 100) : (r.q2Revenue > 0 ? 100.0 : 0.0);
-    const pacePercent = (q2ElapsedDays / 90) * 100;
+    const pacePercent = q2TotalDays > 0 ? (q2ElapsedDays / q2TotalDays) * 100 : 0;
     const paceStatus = progressPercent >= pacePercent ? '🟢' : '🔴';
     return {
       '페이스 현황': paceStatus,
@@ -888,7 +960,7 @@ function exportToExcel() {
 function updatePaceUI() {
   const paceValEl = document.getElementById('pace-value');
   if (paceValEl) {
-    const pacePercent = (q2ElapsedDays / 90) * 100;
+    const pacePercent = q2TotalDays > 0 ? (q2ElapsedDays / q2TotalDays) * 100 : 0;
     paceValEl.textContent = pacePercent.toFixed(2) + '%';
   }
 }

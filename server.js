@@ -64,9 +64,9 @@ let q1Group3AdSpend = 490090134;
 let q1Group4AdSpend = 21605441;
 
 // Q2 Days and reference date tracking based on filename
-let q2ElapsedDays = 43;
+let q2ElapsedDays = 45;
 let q2TotalDays = 91;
-let q2ReferenceDate = '260513';
+let q2ReferenceDate = '260515';
 
 // Baseline tracking variables
 let currentQ1QoqTotal = 242727142; // default fallback
@@ -187,7 +187,7 @@ function performJoinsAndCalculations() {
       vendorQoqBase = vendor.q2QoqRevenue;
     }
     
-    if (mayVendorlistSet.has(vendorId)) {
+    if (mayVendorlistSet.has(vendorId) && q2ElapsedDays > 0) {
       expectedQ2Sum += vendorQoqBase * q2TotalDays / q2ElapsedDays;
     } else {
       expectedQ2Sum += vendorQoqBase;
@@ -229,7 +229,7 @@ function performJoinsAndCalculations() {
     const expectedMarketerIncentive = marketerNewIncentive + marketerQoqIncentive;
 
     const isMayVendor = mayVendorlistSet.has(vendorId);
-    const q2PredictedRevenue = isMayVendor ? Math.round(q2Revenue * q2TotalDays / q2ElapsedDays) : q2Revenue;
+    const q2PredictedRevenue = (isMayVendor && q2ElapsedDays > 0) ? Math.round(q2Revenue * q2TotalDays / q2ElapsedDays) : q2Revenue;
 
     return {
       id: vendorId || `EXCEL_${index}`,
@@ -437,9 +437,9 @@ function extractCurrentQ1QoqTotal(filePath) {
  * Parses elapsed/total Q2 days and reference date from filename (delaying by 2 days)
  */
 function getQ2DaysFromFilename(filename) {
-  let elapsedDays = 43; 
+  let elapsedDays = 45; 
   const totalDays = 91; 
-  let referenceDate = '260513'; // default fallback
+  let referenceDate = '260515'; // default fallback
 
   const match = filename.match(/(?:20)?(\d{2})[-_.]?(\d{2})[-_.]?(\d{2})/);
   if (match) {
@@ -450,19 +450,18 @@ function getQ2DaysFromFilename(filename) {
 
       const filenameDate = new Date(year, month, day);
       if (!isNaN(filenameDate.getTime())) {
-        const refDate = new Date(filenameDate.getTime() - 2 * 24 * 60 * 60 * 1000);
         const q2Start = new Date(year, 3, 1); 
         
-        const diffTime = refDate.getTime() - q2Start.getTime();
+        const diffTime = filenameDate.getTime() - q2Start.getTime();
         const diffDays = Math.floor(diffTime / (24 * 60 * 60 * 1000)) + 1;
         
         if (diffDays >= 1) {
           elapsedDays = Math.min(diffDays, totalDays);
         }
 
-        const yy = String(refDate.getFullYear()).slice(-2);
-        const mm = String(refDate.getMonth() + 1).padStart(2, '0');
-        const dd = String(refDate.getDate()).padStart(2, '0');
+        const yy = String(filenameDate.getFullYear()).slice(-2);
+        const mm = String(filenameDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(filenameDate.getDate()).padStart(2, '0');
         referenceDate = `${yy}${mm}${dd}`;
 
         console.log(`Dynamic date parsed from filename "${filename}": ${year}-${month+1}-${day}. Ref date: ${yy}-${mm}-${dd} (${referenceDate}). Q2 Elapsed days: ${elapsedDays}/${totalDays}`);

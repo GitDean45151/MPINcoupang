@@ -68,7 +68,29 @@
       </div>
     </header>
 
-    <div class="main-layout">
+    <!-- Upload Landing View -->
+    <div id="upload-landing-view" class="upload-landing-view hidden">
+      <div class="upload-landing-card">
+        <div class="landing-logo-icon">🚀</div>
+        <h2>Coupang Ads Portal</h2>
+        <p class="landing-desc">분기별 광고 실적 및 마케터 인센티브 정산 대시보드입니다.<br>최신 매출 업데이트 파일을 업로드하여 리포트를 활성화하십시오.</p>
+        
+        <div class="landing-upload-zone" id="landing-upload-zone">
+          <div class="landing-upload-icon">📤</div>
+          <div class="landing-upload-text">
+            매출 업데이트 파일을 마우스로 끌어다 놓거나 아래 버튼을 누르세요.
+          </div>
+          <button class="btn-primary mt-12" id="btn-landing-upload-trigger">매출 업데이트 파일 선택</button>
+          <input type="file" id="landing-file-input" accept=".csv,.xlsx,.xls" class="hidden-input">
+        </div>
+        
+        <div class="landing-status-badge">
+          기초 데이터: coupang.xlsx
+        </div>
+      </div>
+    </div>
+
+    <div class="main-layout" id="main-layout">
       <!-- Right Dashboard Content -->
       <main class="content-panel">
         <!-- Dashboard Empty State -->
