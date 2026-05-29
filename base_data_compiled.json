@@ -5010,11 +5010,41 @@
       "marketer": "미맵핑",
       "vendorName": "연지"
     },
+    "A01407715": {
+      "q1Revenue": 0,
+      "team": "2팀",
+      "marketer": "박승훈",
+      "vendorName": "에이치엘비(주)헬스케어 세종영업소"
+    },
+    "A00633014": {
+      "q1Revenue": 0,
+      "team": "2팀",
+      "marketer": "박승훈",
+      "vendorName": "파인어스"
+    },
+    "A00006992": {
+      "q1Revenue": 0,
+      "team": "4팀",
+      "marketer": "강은정",
+      "vendorName": "(주)보노테크"
+    },
     "A00772051": {
       "q1Revenue": 0,
-      "team": "미배정",
-      "marketer": "미배정",
+      "team": "마케팅1팀",
+      "marketer": "마케팅1팀",
       "vendorName": "주식회사 봄봄북스"
+    },
+    "A00857180": {
+      "q1Revenue": 0,
+      "team": "마케팅3팀",
+      "marketer": "마케팅3팀",
+      "vendorName": "주식회사 제이코프(JAYCORP.)"
+    },
+    "A01596934": {
+      "q1Revenue": 0,
+      "team": "7팀",
+      "marketer": "염종훈",
+      "vendorName": "주식회사통"
     },
     "A00239521": {
       "q1Revenue": 0,
@@ -5027,12 +5057,6 @@
       "team": "미배정",
       "marketer": "미배정",
       "vendorName": "샤랄라 에스더"
-    },
-    "A00857180": {
-      "q1Revenue": 0,
-      "team": "미배정",
-      "marketer": "미배정",
-      "vendorName": "주식회사 제이코프(JAYCORP.)"
     },
     "A00243154": {
       "q1Revenue": 0,
@@ -5315,12 +5339,6 @@
       "team": "미배정",
       "marketer": "미배정",
       "vendorName": "성일상사"
-    },
-    "A00006992": {
-      "q1Revenue": 0,
-      "team": "미배정",
-      "marketer": "미배정",
-      "vendorName": "(주)보노테크"
     },
     "A00023709": {
       "q1Revenue": 0,
@@ -7781,12 +7799,6 @@
       "team": "미배정",
       "marketer": "미배정",
       "vendorName": "미콜뷰티"
-    },
-    "A01596934": {
-      "q1Revenue": 0,
-      "team": "미배정",
-      "marketer": "미배정",
-      "vendorName": "주식회사통"
     },
     "A00386347": {
       "q1Revenue": 0,
@@ -13938,12 +13950,6 @@
       "marketer": "미배정",
       "vendorName": "주부홀릭"
     },
-    "A00633014": {
-      "q1Revenue": 0,
-      "team": "미배정",
-      "marketer": "미배정",
-      "vendorName": "파인어스"
-    },
     "A00455383": {
       "q1Revenue": 0,
       "team": "미배정",
@@ -19763,12 +19769,6 @@
       "team": "미배정",
       "marketer": "미배정",
       "vendorName": "리얼이니"
-    },
-    "A01407715": {
-      "q1Revenue": 0,
-      "team": "미배정",
-      "marketer": "미배정",
-      "vendorName": "에이치엘비(주)헬스케어 세종영업소"
     },
     "A00121155": {
       "q1Revenue": 0,
