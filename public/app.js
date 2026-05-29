@@ -28,7 +28,7 @@ let pivotSortAsc = false;
 
 // Pagination config
 let currentPage = 1;
-const rowsPerPage = 10;
+const rowsPerPage = 5;
 
 // Initialize Dashboard
 document.addEventListener('DOMContentLoaded', async () => {

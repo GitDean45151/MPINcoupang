@@ -103,7 +103,7 @@ body.light-mode ::-webkit-scrollbar-thumb:hover {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding: 20px;
+  padding: 10px 16px;
   max-width: 1820px;
   margin: 0 auto;
 }
@@ -113,14 +113,14 @@ body.light-mode ::-webkit-scrollbar-thumb:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
+  padding: 8px 16px;
   background: var(--panel-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: var(--card-border);
   border-radius: 16px;
   box-shadow: var(--card-shadow);
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   transition: var(--transition-smooth);
 }
 
@@ -131,13 +131,13 @@ body.light-mode ::-webkit-scrollbar-thumb:hover {
 }
 
 .logo-icon {
-  font-size: 28px;
+  font-size: 22px;
   animation: bounce-gentle 3s infinite;
 }
 
 .logo-text h1 {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: -0.5px;
   background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
@@ -202,9 +202,9 @@ body.light-mode ::-webkit-scrollbar-thumb:hover {
   border: var(--card-border);
   border-radius: 16px;
   box-shadow: var(--card-shadow);
-  padding: 24px;
+  padding: 12px 16px;
   transition: var(--transition-smooth);
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .card-header {
@@ -615,7 +615,7 @@ body.light-mode .mock-data-card {
 .dashboard-grid {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
 }
 
 /* ==========================================================================
@@ -624,7 +624,7 @@ body.light-mode .mock-data-card {
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  gap: 10px;
 }
 
 .kpi-card {
@@ -632,7 +632,7 @@ body.light-mode .mock-data-card {
   border: var(--card-border);
   border-radius: 16px;
   box-shadow: var(--card-shadow);
-  padding: 20px;
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -663,9 +663,9 @@ body.light-mode .kpi-card:hover {
 
 .kpi-value {
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 800;
-  margin-top: 10px;
+  margin-top: 4px;
   letter-spacing: -0.5px;
 }
 
@@ -697,7 +697,7 @@ body.light-mode .kpi-card:hover {
 .vis-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 12px;
 }
 
 @media (max-width: 1400px) {
@@ -709,7 +709,7 @@ body.light-mode .kpi-card:hover {
 .chart-card {
   display: flex;
   flex-direction: column;
-  min-height: 380px;
+  min-height: 270px;
 }
 
 .chart-container {
@@ -722,15 +722,15 @@ body.light-mode .kpi-card:hover {
 .pivot-card {
   display: flex;
   flex-direction: column;
-  min-height: 380px;
+  min-height: 270px;
 }
 
 .pivot-wrapper {
   flex: 1;
   overflow-x: auto;
   overflow-y: auto;
-  max-height: 320px;
-  margin-top: 10px;
+  max-height: 210px;
+  margin-top: 6px;
   border-radius: 8px;
   border: var(--card-border);
 }
@@ -773,7 +773,7 @@ body.light-mode .sortable:hover {
   font-family: var(--font-label);
   font-weight: 600;
   color: var(--text-primary);
-  padding: 10px 14px;
+  padding: 6px 10px;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -786,7 +786,7 @@ body.light-mode .pivot-table th {
 }
 
 .pivot-table td {
-  padding: 10px 14px;
+  padding: 6px 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   color: var(--text-secondary);
 }
@@ -850,7 +850,7 @@ body.light-mode .pivot-row-team {
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .grid-controls {
@@ -868,10 +868,10 @@ body.light-mode .pivot-row-team {
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: var(--text-primary);
-  padding: 8px 16px;
+  padding: 6px 12px;
   border-radius: 9999px;
-  font-size: 12px;
-  width: 220px;
+  font-size: 11px;
+  width: 180px;
   transition: var(--transition-smooth);
 }
 body.light-mode .search-box input {
@@ -882,7 +882,7 @@ body.light-mode .search-box input {
 .search-box input:focus {
   outline: none;
   border-color: var(--accent-primary);
-  width: 280px;
+  width: 220px;
   box-shadow: 0 0 10px rgba(217, 70, 239, 0.15);
 }
 
@@ -890,9 +890,9 @@ body.light-mode .search-box input {
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: var(--text-primary);
-  padding: 8px 16px;
+  padding: 6px 12px;
   border-radius: 9999px;
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
   outline: none;
   transition: var(--transition-smooth);
@@ -924,9 +924,9 @@ body.light-mode .grid-controls select {
   font-family: var(--font-label);
   font-weight: 600;
   color: var(--text-primary);
-  padding: 8px 5px;
+  padding: 6px 3px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 12px;
+  font-size: 13.5px;
 }
 body.light-mode .data-grid th {
   background: rgba(0, 0, 0, 0.05);
@@ -934,10 +934,10 @@ body.light-mode .data-grid th {
 }
 
 .data-grid td {
-  padding: 8px 5px;
+  padding: 6px 3px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 13.5px;
 }
 body.light-mode .data-grid td {
   border-bottom-color: rgba(0, 0, 0, 0.04);
@@ -974,7 +974,7 @@ body.light-mode .row-max-incentive td {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 16px;
+  margin-top: 8px;
   font-size: 12px;
   color: var(--text-secondary);
 }
@@ -1078,8 +1078,8 @@ body.light-mode .btn-pagination-nav:hover:not(:disabled) {
 .kpi-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .kpi-grid.expected-row {
@@ -1103,11 +1103,11 @@ body.light-mode .btn-pagination-nav:hover:not(:disabled) {
 .header-upload-section {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  padding: 8px 16px;
+  padding: 6px 12px;
   transition: var(--transition-smooth);
 }
 
@@ -1268,8 +1268,8 @@ body.light-mode .btn-secondary-compact:hover {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
-  padding: 4px 12px;
-  min-width: 120px;
+  padding: 2px 8px;
+  min-width: 100px;
 }
 
 body.light-mode .pace-widget {
