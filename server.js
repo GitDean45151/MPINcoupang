@@ -6,6 +6,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 import XLSX from 'xlsx';
+import { put, list, del } from '@vercel/blob';
 
 // Load environment variables
 dotenv.config();
@@ -291,8 +292,10 @@ function normalizeHeaderName(h) {
 /**
  * Robust extraction of Vendor ID and Sales values from custom update sheets
  */
-function preprocessSalesFile(filePath) {
-  const workbook = XLSX.readFile(filePath);
+function preprocessSalesFile(filePathOrWorkbook) {
+  const workbook = typeof filePathOrWorkbook === 'string' 
+    ? XLSX.readFile(filePathOrWorkbook) 
+    : filePathOrWorkbook;
   const firstSheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[firstSheetName];
   
@@ -401,9 +404,11 @@ function preprocessSalesFile(filePath) {
 /**
  * Extracts currentQ1QoqTotal dynamically from the summary section of the Q2 sales file
  */
-function extractCurrentQ1QoqTotal(filePath) {
+function extractCurrentQ1QoqTotal(filePathOrWorkbook) {
   try {
-    const workbook = XLSX.readFile(filePath);
+    const workbook = typeof filePathOrWorkbook === 'string' 
+      ? XLSX.readFile(filePathOrWorkbook) 
+      : filePathOrWorkbook;
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
     const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
@@ -475,7 +480,7 @@ function getQ2DaysFromFilename(filename) {
   return { elapsedDays, totalDays, referenceDate };
 }
 
-function loadAndInitializeData() {
+async function loadAndInitializeData() {
   console.log('--- Initializing Coupang Ads Dashboard Data ---');
   
   const compiledPath = path.join(__dirname, 'base_data_compiled.json');
@@ -516,46 +521,98 @@ function loadAndInitializeData() {
   }
 
 
-  // Load Fact Table (either latest uploaded or default 260515_MP.xlsx)
+  // Load Fact Table (either Vercel Blob, latest uploaded or default 260515_MP.xlsx)
   const latestSalesPath = LATEST_SALES_PATH;
   let factFilePath = COUPANG_FILE_PATH; // fallback
   let factLoaded = false;
   let filenameForDate = '260515_MP.xlsx'; // default fallback
+  let uploadedBuffer = null;
 
-  if (fs.existsSync(latestSalesPath)) {
-    factFilePath = latestSalesPath;
-    console.log(`Found uploaded sales update at ${latestSalesPath}`);
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      console.log('Checking Vercel Blob storage for uploaded sales file...');
+      const { blobs } = await list();
+      const latestSalesBlob = blobs.find(b => b.pathname === 'latest_sales.xlsx');
+      
+      if (latestSalesBlob) {
+        console.log(`Found uploaded sales update in Vercel Blob: ${latestSalesBlob.url}`);
+        const response = await fetch(latestSalesBlob.url);
+        if (response.ok) {
+          const arrayBuffer = await response.arrayBuffer();
+          uploadedBuffer = Buffer.from(arrayBuffer);
+          factLoaded = true;
+          console.log(`Downloaded latest_sales.xlsx from Vercel Blob (${uploadedBuffer.length} bytes)`);
 
-    // Read original name from metadata.json
-    const metadataPath = METADATA_PATH;
-    if (fs.existsSync(metadataPath)) {
-      try {
-        const meta = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-        if (meta.originalName) {
-          filenameForDate = meta.originalName;
-          console.log(`Resolved original uploaded filename from metadata: ${filenameForDate}`);
+          const metadataBlob = blobs.find(b => b.pathname === 'metadata.json');
+          if (metadataBlob) {
+            try {
+              const metaRes = await fetch(metadataBlob.url);
+              if (metaRes.ok) {
+                const meta = await metaRes.json();
+                if (meta.originalName) {
+                  filenameForDate = meta.originalName;
+                  console.log(`Resolved original uploaded filename from Vercel Blob metadata: ${filenameForDate}`);
+                }
+              }
+            } catch (err) {}
+          }
         }
-      } catch (err) {}
+      }
+    } catch (blobErr) {
+      console.error('Failed to read from Vercel Blob:', blobErr.message);
     }
+  }
 
-    // Parse Q2 elapsed/total days and reference date dynamically
+  if (!factLoaded) {
+    if (fs.existsSync(latestSalesPath)) {
+      factFilePath = latestSalesPath;
+      console.log(`Found uploaded sales update at ${latestSalesPath}`);
+
+      // Read original name from metadata.json
+      const metadataPath = METADATA_PATH;
+      if (fs.existsSync(metadataPath)) {
+        try {
+          const meta = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+          if (meta.originalName) {
+            filenameForDate = meta.originalName;
+            console.log(`Resolved original uploaded filename from metadata: ${filenameForDate}`);
+          }
+        } catch (err) {}
+      }
+      factLoaded = true;
+    } else {
+      console.log('No uploaded sales file found. Dashboard initialized with 0 data.');
+      rawSheets.q2 = [];
+      factFilePath = null;
+      q2ElapsedDays = 0;
+      q2TotalDays = 91;
+      q2ReferenceDate = '적용 없음';
+      factLoaded = true;
+      currentQ1QoqTotal = 0;
+    }
+  }
+
+  // Parse Q2 elapsed/total days and reference date dynamically
+  if (factLoaded && (uploadedBuffer || factFilePath)) {
     const daysInfo = getQ2DaysFromFilename(filenameForDate);
     q2ElapsedDays = daysInfo.elapsedDays;
     q2TotalDays = daysInfo.totalDays;
     q2ReferenceDate = daysInfo.referenceDate;
-  } else {
-    console.log('No uploaded sales file found. Dashboard initialized with 0 data.');
-    rawSheets.q2 = [];
-    factFilePath = null;
-    q2ElapsedDays = 0;
-    q2TotalDays = 91;
-    q2ReferenceDate = '적용 없음';
-    factLoaded = true;
-    currentQ1QoqTotal = 0;
   }
 
   try {
-    if (factFilePath === COUPANG_FILE_PATH) {
+    if (uploadedBuffer) {
+      const workbook = XLSX.read(uploadedBuffer, { type: 'buffer' });
+      rawSheets.q2 = preprocessSalesFile(workbook);
+
+      const dynamicQ1 = extractCurrentQ1QoqTotal(workbook);
+      if (dynamicQ1 !== null) {
+        currentQ1QoqTotal = dynamicQ1;
+        console.log(`Found currentQ1QoqTotal dynamically from Blob: ${currentQ1QoqTotal}`);
+      } else {
+        currentQ1QoqTotal = 242727142; 
+      }
+    } else if (factFilePath === COUPANG_FILE_PATH) {
       const workbook = XLSX.readFile(COUPANG_FILE_PATH);
       const q2Sheet = workbook.Sheets['2Q'];
       if (q2Sheet) {
@@ -564,7 +621,6 @@ function loadAndInitializeData() {
           const vendorid = String(row.vendorid || '').trim();
           return { ...row, vendorid };
         }).filter(row => /^A\d+$/.test(row.vendorid));
-        factLoaded = true;
       }
     } else if (factFilePath) {
       console.log(`Preprocessing sales Fact Table from ${factFilePath}...`);
@@ -578,22 +634,20 @@ function loadAndInitializeData() {
       } else {
         currentQ1QoqTotal = 242727142; // default fallback if we have a file but extraction returned null
       }
-
-      factLoaded = true;
     }
   } catch (err) {
-    console.error(`Error loading Fact Table from ${factFilePath}:`, err.message);
+    console.error(`Error loading Fact Table:`, err.message);
   }
 
-  if (factLoaded) {
+  if (rawSheets.q2 && rawSheets.q2.length > 0) {
     performJoinsAndCalculations();
   } else {
-    console.error('CRITICAL: Failed to load Fact Table.');
+    console.warn('Fact table is empty. Joining skipped.');
   }
 }
 
 // Perform initial data loading
-loadAndInitializeData();
+await loadAndInitializeData();
 
 // Dynamic uploadsDir handles folder creation above
 
@@ -640,7 +694,7 @@ app.get('/api/base-data', (req, res) => {
  * POST /api/upload-update
  * Endpoint to upload a single update file (Excel/CSV)
  */
-app.post('/api/upload-update', upload.single('updateFile'), (req, res) => {
+app.post('/api/upload-update', upload.single('updateFile'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
@@ -650,7 +704,22 @@ app.post('/api/upload-update', upload.single('updateFile'), (req, res) => {
   
   try {
     console.log(`Processing uploaded sales file: ${req.file.originalname}`);
-    const preprocessedRows = preprocessSalesFile(filePath);
+    const workbook = XLSX.readFile(filePath);
+    const preprocessedRows = preprocessSalesFile(workbook);
+
+    // Save to Vercel Blob if token is present
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      try {
+        console.log('Uploading sales file and metadata to Vercel Blob...');
+        const fileBuffer = fs.readFileSync(filePath);
+        await put('latest_sales.xlsx', fileBuffer, { access: 'public', addRandomSuffix: false });
+        const metaJSON = JSON.stringify({ originalName: req.file.originalname });
+        await put('metadata.json', metaJSON, { access: 'public', addRandomSuffix: false });
+        console.log('Successfully uploaded files to Vercel Blob.');
+      } catch (blobErr) {
+        console.error('Failed to upload to Vercel Blob:', blobErr.message);
+      }
+    }
     
     // Clean up existing file if any
     if (fs.existsSync(targetPath)) {
@@ -678,7 +747,7 @@ app.post('/api/upload-update', upload.single('updateFile'), (req, res) => {
     rawSheets.q2 = preprocessedRows;
     
     // Extract currentQ1QoqTotal dynamically from the uploaded file
-    const dynamicQ1 = extractCurrentQ1QoqTotal(targetPath);
+    const dynamicQ1 = extractCurrentQ1QoqTotal(workbook);
     if (dynamicQ1 !== null) {
       currentQ1QoqTotal = dynamicQ1;
       console.log(`Updated currentQ1QoqTotal dynamically from upload: ${currentQ1QoqTotal}`);
@@ -730,15 +799,35 @@ app.post('/api/upload-update', upload.single('updateFile'), (req, res) => {
  * POST /api/reset-updates
  * Clear all uploaded updates and restore original values from coupang.xlsx / 260515_MP.xlsx
  */
-app.post('/api/reset-updates', (req, res) => {
+app.post('/api/reset-updates', async (req, res) => {
   try {
+    // Delete from Vercel Blob if token is present
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      try {
+        console.log('Deleting uploaded files from Vercel Blob...');
+        const { blobs } = await list();
+        const latestSalesBlob = blobs.find(b => b.pathname === 'latest_sales.xlsx');
+        const metadataBlob = blobs.find(b => b.pathname === 'metadata.json');
+        if (latestSalesBlob) await del(latestSalesBlob.url);
+        if (metadataBlob) await del(metadataBlob.url);
+        console.log('Successfully deleted files from Vercel Blob.');
+      } catch (blobErr) {
+        console.error('Failed to delete from Vercel Blob:', blobErr.message);
+      }
+    }
+
     const latestSalesPath = LATEST_SALES_PATH;
     if (fs.existsSync(latestSalesPath)) {
       fs.unlinkSync(latestSalesPath);
     }
     
+    const metadataPath = METADATA_PATH;
+    if (fs.existsSync(metadataPath)) {
+      fs.unlinkSync(metadataPath);
+    }
+    
     // Reload initial data from disk
-    loadAndInitializeData();
+    await loadAndInitializeData();
     
     res.json({
       success: true,
