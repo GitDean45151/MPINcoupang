@@ -19,6 +19,7 @@ let q1ChartValues = {
   'group 3': 490090134,
   'group 4': 21605441
 };
+let q2ReferenceDate = '260513';
 
 // Pivot table sorting state
 let pivotSortColumn = 'incentive';
@@ -54,6 +55,9 @@ async function fetchBaseData() {
     
     if (data.q1ChartValues) {
       q1ChartValues = data.q1ChartValues;
+    }
+    if (data.q2ReferenceDate) {
+      q2ReferenceDate = data.q2ReferenceDate;
     }
     
     updateDbStatusUI(data.totalUpdatesCount, data.lastUpdated);
@@ -237,6 +241,9 @@ async function handleSalesUpdateUpload(file) {
     if (data.q1ChartValues) {
       q1ChartValues = data.q1ChartValues;
     }
+    if (data.q2ReferenceDate) {
+      q2ReferenceDate = data.q2ReferenceDate;
+    }
     currentPage = 1;
 
     // Show success status card
@@ -280,6 +287,9 @@ async function handleResetUpdates() {
     expectedQ2QoqTotal = data.expectedQ2QoqTotal !== undefined ? data.expectedQ2QoqTotal : 0;
     if (data.q1ChartValues) {
       q1ChartValues = data.q1ChartValues;
+    }
+    if (data.q2ReferenceDate) {
+      q2ReferenceDate = data.q2ReferenceDate;
     }
     currentPage = 1;
 
@@ -457,7 +467,7 @@ function renderChart() {
       categoryPercentage: 0.7
     },
     {
-      label: '2Q 광고비 (~260513)',
+      label: `2Q 광고비 (~${q2ReferenceDate})`,
       data: q2Sums,
       backgroundColor: 'rgba(217, 70, 239, 0.75)',
       borderColor: '#d946ef',
@@ -939,6 +949,7 @@ function loadMockData() {
     'group 3': 490090134,
     'group 4': 21605441
   };
+  q2ReferenceDate = '260513';
   
   updateDbStatusUI('샘플', new Date());
   updateFilterDropdowns();

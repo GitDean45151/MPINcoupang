@@ -53,6 +53,11 @@ let q1Group2AdSpend = 17493317;
 let q1Group3AdSpend = 490090134;
 let q1Group4AdSpend = 21605441;
 
+// Q2 Days and reference date tracking based on filename
+let q2ElapsedDays = 43;
+let q2TotalDays = 91;
+let q2ReferenceDate = '260513';
+
 // Baseline tracking variables
 let currentQ1QoqTotal = 242727142; // default fallback
 let expectedQ1QoqTotal = 0;
@@ -163,7 +168,7 @@ function performJoinsAndCalculations() {
     }
     
     if (mayVendorlistSet.has(vendorId)) {
-      expectedQ2Sum += vendorQoqBase * 91 / 43;
+      expectedQ2Sum += vendorQoqBase * q2TotalDays / q2ElapsedDays;
     } else {
       expectedQ2Sum += vendorQoqBase;
     }
@@ -204,7 +209,7 @@ function performJoinsAndCalculations() {
     const expectedMarketerIncentive = marketerNewIncentive + marketerQoqIncentive;
 
     const isMayVendor = mayVendorlistSet.has(vendorId);
-    const q2PredictedRevenue = isMayVendor ? Math.round(q2Revenue * 91 / 43) : q2Revenue;
+    const q2PredictedRevenue = isMayVendor ? Math.round(q2Revenue * q2TotalDays / q2ElapsedDays) : q2Revenue;
 
     return {
       id: vendorId || `EXCEL_${index}`,
@@ -408,6 +413,49 @@ function extractCurrentQ1QoqTotal(filePath) {
   return null;
 }
 
+/**
+ * Parses elapsed/total Q2 days and reference date from filename (delaying by 2 days)
+ */
+function getQ2DaysFromFilename(filename) {
+  let elapsedDays = 43; 
+  const totalDays = 91; 
+  let referenceDate = '260513'; // default fallback
+
+  const match = filename.match(/(?:20)?(\d{2})[-_.]?(\d{2})[-_.]?(\d{2})/);
+  if (match) {
+    try {
+      const year = 2000 + parseInt(match[1]);
+      const month = parseInt(match[2]) - 1; 
+      const day = parseInt(match[3]);
+
+      const filenameDate = new Date(year, month, day);
+      if (!isNaN(filenameDate.getTime())) {
+        const refDate = new Date(filenameDate.getTime() - 2 * 24 * 60 * 60 * 1000);
+        const q2Start = new Date(year, 3, 1); 
+        
+        const diffTime = refDate.getTime() - q2Start.getTime();
+        const diffDays = Math.floor(diffTime / (24 * 60 * 60 * 1000)) + 1;
+        
+        if (diffDays >= 1) {
+          elapsedDays = Math.min(diffDays, totalDays);
+        }
+
+        const yy = String(refDate.getFullYear()).slice(-2);
+        const mm = String(refDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(refDate.getDate()).padStart(2, '0');
+        referenceDate = `${yy}${mm}${dd}`;
+
+        console.log(`Dynamic date parsed from filename "${filename}": ${year}-${month+1}-${day}. Ref date: ${yy}-${mm}-${dd} (${referenceDate}). Q2 Elapsed days: ${elapsedDays}/${totalDays}`);
+      }
+    } catch (e) {
+      console.warn(`Failed to parse date from filename "${filename}":`, e.message);
+    }
+  } else {
+    console.log(`No date pattern matched in filename "${filename}". Using default fallback: ${elapsedDays}/${totalDays}`);
+  }
+  return { elapsedDays, totalDays, referenceDate };
+}
+
 
 /**
  * Load Base excel sheet and local updates
@@ -556,19 +604,39 @@ function loadAndInitializeData() {
   const latestSalesPath = path.join(__dirname, 'uploads', 'latest_sales.xlsx');
   let factFilePath = COUPANG_FILE_PATH; // fallback
   let factLoaded = false;
+  let filenameForDate = '260515_MP.xlsx'; // default fallback
 
   if (fs.existsSync(latestSalesPath)) {
     factFilePath = latestSalesPath;
     console.log(`Found uploaded sales update at ${latestSalesPath}`);
+
+    // Read original name from metadata.json
+    const metadataPath = path.join(__dirname, 'uploads', 'metadata.json');
+    if (fs.existsSync(metadataPath)) {
+      try {
+        const meta = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+        if (meta.originalName) {
+          filenameForDate = meta.originalName;
+          console.log(`Resolved original uploaded filename from metadata: ${filenameForDate}`);
+        }
+      } catch (err) {}
+    }
   } else {
     const defaultSalesPath = path.join(__dirname, '260515_MP.xlsx');
     if (fs.existsSync(defaultSalesPath)) {
       factFilePath = defaultSalesPath;
+      filenameForDate = '260515_MP.xlsx';
       console.log(`Found default sales file at ${defaultSalesPath}`);
     } else {
       console.warn('Neither uploaded nor default sales file found. Falling back to coupang.xlsx sheet 2Q.');
     }
   }
+
+  // Parse Q2 elapsed/total days and reference date dynamically
+  const daysInfo = getQ2DaysFromFilename(filenameForDate);
+  q2ElapsedDays = daysInfo.elapsedDays;
+  q2TotalDays = daysInfo.totalDays;
+  q2ReferenceDate = daysInfo.referenceDate;
 
   try {
     if (factFilePath === COUPANG_FILE_PATH) {
@@ -647,7 +715,8 @@ app.get('/api/base-data', (req, res) => {
       'group 2': q1Group2AdSpend,
       'group 3': q1Group3AdSpend,
       'group 4': q1Group4AdSpend
-    }
+    },
+    q2ReferenceDate
   });
 });
 
@@ -674,6 +743,20 @@ app.post('/api/upload-update', upload.single('updateFile'), (req, res) => {
     
     // Move/rename temp file to latest_sales.xlsx
     fs.renameSync(filePath, targetPath);
+
+    // Save original filename to metadata
+    const metadataPath = path.join(__dirname, 'uploads', 'metadata.json');
+    try {
+      fs.writeFileSync(metadataPath, JSON.stringify({ originalName: req.file.originalname }), 'utf8');
+    } catch (errMeta) {
+      console.warn('Failed to save upload metadata:', errMeta.message);
+    }
+
+    // Parse dynamic date and elapsed days from uploaded filename
+    const daysInfo = getQ2DaysFromFilename(req.file.originalname);
+    q2ElapsedDays = daysInfo.elapsedDays;
+    q2TotalDays = daysInfo.totalDays;
+    q2ReferenceDate = daysInfo.referenceDate;
     
     // Set Fact Table in memory
     rawSheets.q2 = preprocessedRows;
@@ -707,7 +790,8 @@ app.post('/api/upload-update', upload.single('updateFile'), (req, res) => {
         'group 2': q1Group2AdSpend,
         'group 3': q1Group3AdSpend,
         'group 4': q1Group4AdSpend
-      }
+      },
+      q2ReferenceDate
     });
   } catch (error) {
     console.error('Error processing sales update upload:', error);
@@ -753,7 +837,8 @@ app.post('/api/reset-updates', (req, res) => {
         'group 2': q1Group2AdSpend,
         'group 3': q1Group3AdSpend,
         'group 4': q1Group4AdSpend
-      }
+      },
+      q2ReferenceDate
     });
   } catch (error) {
     res.status(500).json({ error: `Reset failed: ${error.message}` });
