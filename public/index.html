@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coupang Ads Performance & Commission Dashboard</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lexend:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- CDN Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="dark-mode">
+
+  <div class="app-wrapper">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-logo">
+        <div class="logo-icon">🚀</div>
+        <div class="logo-text">
+          <h1>Coupang Ads Portal</h1>
+          <p>1Q vs 2Q Performance & Commission Tracker</p>
+        </div>
+      </div>
+      
+      <!-- Central Upload Widget -->
+      <div class="header-upload-section">
+        <div class="header-upload-zone" id="upload-zone">
+          <span class="upload-icon">📤</span>
+          <span class="upload-text">
+            매출 업데이트 파일 업로드 (드래그 또는 <button class="btn-upload-inline" id="btn-upload-trigger">파일 선택</button>)
+          </span>
+          <input type="file" id="file-input-update" accept=".csv,.xlsx,.xls" class="hidden-input">
+        </div>
+        
+        <div class="header-status-info">
+          <div class="db-status-summary">
+            <span class="db-status-badge">기초: coupang.xlsx</span>
+            <span class="db-status-badge">업데이트: <span id="db-updates-count">0건</span></span>
+            <span class="db-status-badge">동기화: <span id="db-last-updated">없음</span></span>
+            <button id="reset-updates-btn" class="btn-danger-compact hidden">초기화</button>
+          </div>
+          <div id="file-status-card" class="file-status-header-text hidden">
+            <span class="file-status-icon">📄</span>
+            <span id="uploaded-file-name"></span>: 
+            <span id="uploaded-file-info"></span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <button id="generate-mock-btn" class="btn-secondary-compact" title="샘플 데이터 테스트">
+          🧪 샘플 데이터 테스트
+        </button>
+        <button id="theme-toggle" class="btn-icon-secondary" title="테마 변경">
+          <span class="icon-sun">☀️</span>
+          <span class="icon-moon">🌙</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="main-layout">
+      <!-- Right Dashboard Content -->
+      <main class="content-panel">
+        <!-- Dashboard Empty State -->
+        <div id="dashboard-empty-state" class="empty-state">
+          <div class="empty-state-icon">🔄</div>
+          <h2>기초 데이터를 불러오는 중...</h2>
+          <p>서버에서 'coupang.xlsx' 파일을 읽어와 대시보드를 생성하고 있습니다.</p>
+        </div>
+
+        <!-- Dashboard Content Grid -->
+        <div id="dashboard-content-grid" class="dashboard-grid hidden">
+          
+          <!-- Top-line KPI Cards -->
+          <section class="kpi-section">
+            <!-- Expected QoQ Sales (Upper Row) -->
+            <div class="kpi-grid expected-row">
+              <div class="kpi-card" id="kpi-expected-1q-rev">
+                <div class="kpi-header">
+                  <span>예상 1Q QoQ매출</span>
+                  <span class="kpi-icon">🔮</span>
+                </div>
+                <div class="kpi-value highlight-cyan" id="val-expected-1q-rev">₩0</div>
+              </div>
+
+              <div class="kpi-card" id="kpi-expected-2q-rev">
+                <div class="kpi-header">
+                  <span>예상 2Q QoQ매출</span>
+                  <span class="kpi-icon">✨</span>
+                </div>
+                <div class="kpi-value highlight-pink" id="val-expected-2q-rev">₩0</div>
+              </div>
+            </div>
+
+            <!-- Actual QoQ & Fee Info (Lower Row) -->
+            <div class="kpi-grid actual-row">
+              <div class="kpi-card" id="kpi-1q-rev">
+                <div class="kpi-header">
+                  <span>현재 1Q QoQ매출</span>
+                  <span class="kpi-icon">📉</span>
+                </div>
+                <div class="kpi-value" id="val-1q-rev">₩0</div>
+              </div>
+              
+              <div class="kpi-card" id="kpi-2q-rev">
+                <div class="kpi-header">
+                  <span>현재 2Q QoQ매출</span>
+                  <span class="kpi-icon">📈</span>
+                </div>
+                <div class="kpi-value" id="val-2q-rev">₩0</div>
+              </div>
+
+              <div class="kpi-card" id="kpi-qoq-growth">
+                <div class="kpi-header">
+                  <span>전분기 대비 증감률(QoQ)</span>
+                  <span class="kpi-icon">🔄</span>
+                </div>
+                <div class="kpi-value" id="val-qoq-growth">0.00%</div>
+                <div class="kpi-sub" id="val-qoq-diff">₩0 증가</div>
+              </div>
+
+              <div class="kpi-card" id="kpi-company-fees">
+                <div class="kpi-header">
+                  <span>예상 회사 총 수수료 수익</span>
+                  <span class="kpi-icon">🏢</span>
+                </div>
+                <div class="kpi-value highlight-cyan" id="val-company-fees">₩0</div>
+                <div class="kpi-sub" id="val-company-fees-detail">신규 15% ₩0 | QoQ ₩0</div>
+              </div>
+
+              <div class="kpi-card" id="kpi-marketer-incentive">
+                <div class="kpi-header">
+                  <span>예상 마케터 인센티브 총액</span>
+                  <span class="kpi-icon">👤</span>
+                </div>
+                <div class="kpi-value highlight-pink" id="val-marketer-incentive">₩0</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Middle Visualizations: Chart & Pivot Table -->
+          <section class="vis-grid">
+            <!-- Growth Analysis Chart -->
+            <div class="card chart-card">
+              <div class="card-header">
+                <h3>📊 커미션 그룹별 분기 매출 추이</h3>
+                <span class="card-subtitle">커미션 그룹별 1Q 대비 2Q 광고비 합산 비교</span>
+              </div>
+              <div class="chart-container">
+                <canvas id="growthChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Team/Marketer Pivot Table -->
+            <div class="card pivot-card">
+              <div class="card-header">
+                <h3>🏆 팀 / 마케터 실적 및 보상 트래킹</h3>
+                <span class="card-subtitle">팀 및 마케터별 총 1Q/2Q 성과와 인센티브 정산 현황 (인센티브순 정렬)</span>
+              </div>
+              <div class="pivot-wrapper">
+                <table class="pivot-table">
+                  <thead>
+                    <tr id="pivot-header-row">
+                      <th data-sort="name" class="sortable">팀 > 마케터 <span class="sort-icon"></span></th>
+                      <th data-sort="q1" class="sortable text-right">1Q 매출 <span class="sort-icon"></span></th>
+                      <th data-sort="q2" class="sortable text-right">2Q 매출 <span class="sort-icon"></span></th>
+                      <th data-sort="diff" class="sortable text-right">매출 증감액 <span class="sort-icon"></span></th>
+                      <th data-sort="growth" class="sortable text-right">평균 증감률 <span class="sort-icon"></span></th>
+                      <th data-sort="commission15" class="sortable text-right">신규 수수료 합계 <span class="sort-icon"></span></th>
+                      <th data-sort="qoqCommission" class="sortable text-right">QoQ 수수료 합계 <span class="sort-icon"></span></th>
+                      <th data-sort="incentive" class="sortable text-right">마케터 인센티브 합계 <span class="sort-icon"></span></th>
+                    </tr>
+                  </thead>
+                  <tbody id="pivot-table-body">
+                    <!-- Dynamic Pivot Rows -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- Detailed Data Grid -->
+          <section class="grid-section">
+            <div class="card grid-card">
+              <div class="card-header grid-header-actions">
+                <div>
+                  <h3>📋 ID별 상세 커미션 리포트</h3>
+                  <span class="card-subtitle">각 벤더 ID별 매출 추이, 증감률 및 수수료/인센티브 세부 산정 결과</span>
+                </div>
+                <div class="grid-controls">
+                  <div class="search-box">
+                    <input type="text" id="grid-search" placeholder="벤더 ID, 업체명, 마케터 검색...">
+                  </div>
+                  <select id="filter-team">
+                    <option value="">모든 팀</option>
+                  </select>
+                  <select id="filter-group">
+                    <option value="">모든 커미션 그룹</option>
+                  </select>
+                  <button id="export-excel-btn" class="btn-secondary">
+                    📥 Excel 다운로드
+                  </button>
+                </div>
+              </div>
+              
+              <div class="grid-wrapper">
+                <table class="data-grid">
+                  <thead>
+                    <tr>
+                      <th>vendorid</th>
+                      <th>업체명</th>
+                      <th>팀</th>
+                      <th>마케터</th>
+                      <th>커미션 그룹</th>
+                      <th class="text-right">1Q 매출</th>
+                      <th class="text-right">2Q 매출</th>
+                      <th class="text-right">매출 증감률</th>
+                      <th class="text-center">신규대상</th>
+                      <th class="text-right">신규 수수료</th>
+                      <th class="text-center">QoQ 대상</th>
+                      <th class="text-right">QoQ 수수료율</th>
+                      <th class="text-right">QoQ 수수료액</th>
+                      <th class="text-right">인센티브율</th>
+                      <th class="text-right">마케터 인센티브액</th>
+                    </tr>
+                  </thead>
+                  <tbody id="grid-table-body">
+                    <!-- Dynamic Data Rows -->
+                  </tbody>
+                </table>
+              </div>
+              
+              <div class="grid-footer">
+                <div class="grid-count" id="grid-row-count">총 0건 조회됨</div>
+                <div class="grid-pagination">
+                  <button id="btn-page-prev" class="btn-pagination-nav" disabled>이전</button>
+                  <span id="grid-page-number">페이지 1 / 1</span>
+                  <button id="btn-page-next" class="btn-pagination-nav" disabled>다음</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="spinner-container">
+      <div class="spinner-loader"></div>
+      <p id="loading-text">파일을 처리하는 중입니다...</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
