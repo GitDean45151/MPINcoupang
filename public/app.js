@@ -20,6 +20,7 @@ let q1ChartValues = {
   'group 4': 21605441
 };
 let q2ReferenceDate = '260513';
+let q2ElapsedDays = 0;
 
 // Pivot table sorting state
 let pivotSortColumn = 'incentive';
@@ -59,6 +60,8 @@ async function fetchBaseData() {
     if (data.q2ReferenceDate) {
       q2ReferenceDate = data.q2ReferenceDate;
     }
+    q2ElapsedDays = data.q2ElapsedDays !== undefined ? data.q2ElapsedDays : 0;
+    updatePaceUI();
     
     updateDbStatusUI(data.totalUpdatesCount, data.lastUpdated);
     updateFilterDropdowns();
@@ -169,9 +172,6 @@ function initEventListeners() {
   // Reset Updates Button
   document.getElementById('reset-updates-btn').addEventListener('click', handleResetUpdates);
 
-  // Generate Mock Data Button
-  document.getElementById('generate-mock-btn').addEventListener('click', loadMockData);
-
   // Grid controls
   document.getElementById('grid-search').addEventListener('input', handleFilterChange);
   document.getElementById('filter-team').addEventListener('change', handleFilterChange);
@@ -238,6 +238,7 @@ async function handleSalesUpdateUpload(file) {
     agencyQ2QoqTotal = data.currentQ2QoqTotal !== undefined ? data.currentQ2QoqTotal : (data.q2QoqTotal !== undefined ? data.q2QoqTotal : 0);
     expectedQ1QoqTotal = data.expectedQ1QoqTotal !== undefined ? data.expectedQ1QoqTotal : 0;
     expectedQ2QoqTotal = data.expectedQ2QoqTotal !== undefined ? data.expectedQ2QoqTotal : 0;
+    q2ElapsedDays = data.q2ElapsedDays !== undefined ? data.q2ElapsedDays : 0;
     if (data.q1ChartValues) {
       q1ChartValues = data.q1ChartValues;
     }
@@ -285,6 +286,7 @@ async function handleResetUpdates() {
     agencyQ2QoqTotal = data.currentQ2QoqTotal !== undefined ? data.currentQ2QoqTotal : (data.q2QoqTotal !== undefined ? data.q2QoqTotal : 0);
     expectedQ1QoqTotal = data.expectedQ1QoqTotal !== undefined ? data.expectedQ1QoqTotal : 0;
     expectedQ2QoqTotal = data.expectedQ2QoqTotal !== undefined ? data.expectedQ2QoqTotal : 0;
+    q2ElapsedDays = data.q2ElapsedDays !== undefined ? data.q2ElapsedDays : 0;
     if (data.q1ChartValues) {
       q1ChartValues = data.q1ChartValues;
     }
@@ -333,6 +335,7 @@ function renderDashboard() {
   renderChart();
   renderPivotTable();
   renderDataGrid();
+  updatePaceUI();
 }
 
 // Generate dropdown items dynamically based on processed data
@@ -441,8 +444,9 @@ function renderChart() {
     }
   });
 
+  const hasUpload = joinedRecords.length > 0;
   groups.forEach((g, idx) => {
-    q1Sums[idx] = q1ChartValues[g] || 0;
+    q1Sums[idx] = hasUpload ? (q1ChartValues[g] || 0) : 0;
   });
 
   const subtitleEl = document.querySelector('.chart-card .card-subtitle');
@@ -621,11 +625,11 @@ function renderPivotTable() {
   // Calculate derivatives for sorting
   Object.values(pivotData).forEach(team => {
     team.diff = team.q2 - team.q1;
-    team.growth = team.q1 > 0 ? (team.diff / team.q1) * 100 : (team.q2 > 0 ? 100 : 0);
+    team.progress = team.q1 > 0 ? (team.q2 / team.q1) * 100 : (team.q2 > 0 ? 100 : 0);
     
     Object.values(team.marketers).forEach(m => {
       m.diff = m.q2 - m.q1;
-      m.growth = m.q1 > 0 ? (m.diff / m.q1) * 100 : (m.q2 > 0 ? 100 : 0);
+      m.progress = m.q1 > 0 ? (m.q2 / m.q1) * 100 : (m.q2 > 0 ? 100 : 0);
     });
   });
 
@@ -668,7 +672,7 @@ function renderPivotTable() {
       <td class="text-right ${teamDiff >= 0 ? 'positive' : 'negative'}" style="color: ${teamDiff >= 0 ? 'var(--success)' : 'var(--danger)'}">
         ${teamDiff >= 0 ? '+' : ''}${formatKRW(teamDiff)}
       </td>
-      <td class="text-right">${teamGrowth.toFixed(2)}%</td>
+      <td class="text-right">${team.progress.toFixed(2)}%</td>
       <td class="text-right">${formatKRW(team.commission15)}</td>
       <td class="text-right">${formatKRW(team.qoqCommission)}</td>
       <td class="text-right" style="color: var(--accent-primary); font-weight: bold;">${formatKRW(team.incentive)}</td>
@@ -689,7 +693,7 @@ function renderPivotTable() {
         <td class="text-right" style="color: ${mDiff >= 0 ? 'var(--success)' : 'var(--danger)'}">
           ${mDiff >= 0 ? '+' : ''}${formatKRW(mDiff)}
         </td>
-        <td class="text-right">${mGrowth.toFixed(2)}%</td>
+        <td class="text-right">${m.progress.toFixed(2)}%</td>
         <td class="text-right">${formatKRW(m.commission15)}</td>
         <td class="text-right">${formatKRW(m.qoqCommission)}</td>
         <td class="text-right" style="color: var(--accent-primary); font-weight: bold;">${formatKRW(m.incentive)}</td>
@@ -754,8 +758,8 @@ function renderDataGrid() {
       <td class="text-center"><span class="badge">${r.commissionGroup}</span></td>
       <td class="text-right">${formatKRW(r.q1Revenue)}</td>
       <td class="text-right">${formatKRW(r.q2Revenue)}</td>
-      <td class="text-right ${r.growthAmount >= 0 ? 'positive' : 'negative'}" style="font-weight: 600;">
-        ${r.growthAmount >= 0 ? '+' : ''}${r.growthRatePercent.toFixed(2)}%
+      <td class="text-right ${r.q2Revenue >= r.q1Revenue ? 'positive' : 'negative'}" style="font-weight: 600;">
+        ${(r.q1Revenue > 0 ? (r.q2Revenue / r.q1Revenue * 100) : (r.q2Revenue > 0 ? 100.0 : 0.0)).toFixed(2)}%
       </td>
       <td class="text-center" style="font-weight: bold; color: ${r.isNewCommission ? 'var(--success)' : 'var(--text-muted)'}">
         ${r.isNewCommission ? '지급(O)' : '미지급(X)'}
@@ -789,7 +793,7 @@ function exportToExcel() {
     '1Q 매출': r.q1Revenue,
     '2Q 매출': r.q2Revenue,
     '매출 증감액': r.growthAmount,
-    '매출 증감률(%)': Number(r.growthRatePercent.toFixed(2)),
+    '매출 진도율(%)': Number((r.q1Revenue > 0 ? (r.q2Revenue / r.q1Revenue * 100) : (r.q2Revenue > 0 ? 100.0 : 0.0)).toFixed(2)),
     '신규대상': r.isNewCommission ? '지급(O)' : '미지급(X)',
     '신규 수수료': r.commission15,
     'QoQ 대상': r.isQoqEligible ? '지급(O)' : '미지급(X)',
@@ -811,160 +815,17 @@ function exportToExcel() {
   hideLoading();
 }
 
-// Generate Mock Data locally for instant testing (Frontend Fallback)
-function loadMockData() {
-  showLoading('모의 샘플 데이터 생성 중...');
-
-  const mockSellers = [
-    { 'vendor id': '1001', 'vendor name': '나이키 코리아' },
-    { 'vendor id': '1002', 'vendor name': '아디다스 공식몰' },
-    { 'vendor id': '1003', 'vendor name': '밸런시스코리아' },
-    { 'vendor id': '1004', 'vendor name': '바이퀸즈' },
-    { 'vendor id': '1005', 'vendor name': '정상커뮤니케이션즈' },
-    { 'vendor id': '1006', 'vendor name': '스마트스팟' },
-    { 'vendor id': '1007', 'vendor name': '레고 코리아' },
-    { 'vendor id': '1008', 'vendor name': '삼성전자 판매처' },
-    { 'vendor id': '1009', 'vendor name': 'LG 리테일' },
-    { 'vendor id': '1010', 'vendor name': '어블러썸 뷰티' },
-    { 'vendor id': '1011', 'vendor name': '한샘 가구대리점' },
-    { 'vendor id': '1012', 'vendor name': '다이슨 공식숍' },
-    { 'vendor id': '1013', 'vendor name': '샤오미 유통망' },
-    { 'vendor id': '1014', 'vendor name': '필립스 조명' },
-    { 'vendor id': '1015', 'vendor name': '테팔 리빙앤뷰티' }
-  ];
-
-  const marketers = [
-    { team: '마케팅1팀', name: '김용덕' },
-    { team: '마케팅2팀', name: '엄도윤' },
-    { team: '마케팅3팀', name: '최혜림' },
-    { team: '5팀', name: '이예진' },
-    { team: '9팀', name: '신승규' },
-    { team: '지원팀', name: '황병동' },
-    { team: '7팀', name: '남현민' }
-  ];
-
-  const mockRecords = mockSellers.map((s, idx) => {
-    const vid = 'A0000' + s['vendor id'];
-    const marketerInfo = marketers[idx % marketers.length];
-    const group = `group ${(idx % 4) + 1}`; // group 1 to group 4
-    
-    let q1Revenue = 0;
-    let q2Revenue = 0;
-    
-    if (idx % 5 === 0) {
-      q1Revenue = 50000000 + idx * 1000000;
-      q2Revenue = 42000000 + idx * 800000;
-    } else if (idx % 5 === 1) {
-      q1Revenue = 20000000 + idx * 500000;
-      q2Revenue = 21000000 + idx * 550000;
-    } else if (idx % 5 === 2) {
-      q1Revenue = 15000000 + idx * 400000;
-      q2Revenue = 17500000 + idx * 500000;
-    } else if (idx % 5 === 3) {
-      q1Revenue = 10000000 + idx * 300000;
-      q2Revenue = 12500000 + idx * 400000;
-    } else {
-      q1Revenue = 8000000 + idx * 200000;
-      q2Revenue = 12000000 + idx * 500000;
-    }
-
-    const growthAmount = q2Revenue - q1Revenue;
-    const growthRate = q1Revenue > 0 ? (q2Revenue - q1Revenue) / q1Revenue : (q2Revenue > 0 ? 1.0 : 0.0);
-    const growthRatePercent = growthRate * 100;
-
-    // 15% new commission on Group 1 & 2
-    const isNewCommission = ['group 1', 'group 2'].includes(group);
-    
-    // Simulate 90-day target and QoQ target revenues
-    const q290DayRevenue = isNewCommission ? (group === 'group 2' ? q2Revenue * 0.9 : q2Revenue) : 0;
-    const q2QoqRevenue = ['group 2', 'group 3', 'group 4'].includes(group) ? (group === 'group 2' ? q2Revenue * 0.1 : q2Revenue) : 0;
-    
-    // Simulate prediction for target vendors (May list targets)
-    const q2PredictedRevenue = Math.round(q2Revenue * 91 / 43);
-
-    const commission15 = isNewCommission ? q290DayRevenue * 0.15 : 0;
-    const isQoqEligible = ['group 2', 'group 3', 'group 4'].includes(group);
-
-    // Mock agency rates (since agencyGrowthRate is mocked at 25% = 0.25)
-    const qoqCommissionRate = 0.175; // 17.5% for 20-30% growth
-    const marketerIncentiveRate = 0.07; // 7% for 20-30% growth
-
-    const expectedQoqCommission = isQoqEligible ? q2QoqRevenue * qoqCommissionRate : 0;
-    
-    // Marketer incentives logic
-    const marketerNewIncentive = isNewCommission ? q290DayRevenue * 0.05 : 0;
-    const marketerQoqIncentive = isQoqEligible ? q2QoqRevenue * marketerIncentiveRate : 0;
-    const expectedMarketerIncentive = marketerNewIncentive + marketerQoqIncentive;
-
-    return {
-      id: `MOCK_${idx}`,
-      vendorId: vid,
-      vendorName: s['vendor name'],
-      team: marketerInfo.team,
-      marketer: marketerInfo.name,
-      commissionGroup: group,
-      q1Revenue,
-      q2Revenue,
-      q2PredictedRevenue,
-      growthAmount,
-      growthRatePercent,
-      isNewCommission,
-      commission15,
-      isQoqEligible,
-      qoqCommissionRate,
-      expectedQoqCommission,
-      marketerIncentiveRate,
-      marketerNewIncentive,
-      marketerGrowthIncentive: marketerQoqIncentive,
-      expectedMarketerIncentive,
-      isUpdated: false
-    };
-  });
-
-  joinedRecords = mockRecords;
-  filteredRecords = [...joinedRecords];
-  currentPage = 1;
-
-  let mockQ1QoqTotal = 0;
-  let mockQ2QoqTotal = 0;
-  mockRecords.forEach(r => {
-    if (r.commissionGroup === 'group 3') {
-      mockQ1QoqTotal += r.q1Revenue;
-      mockQ2QoqTotal += r.q2Revenue;
-    } else if (r.commissionGroup === 'group 2') {
-      mockQ1QoqTotal += r.q1Revenue;
-      mockQ2QoqTotal += r.q2Revenue * 0.1;
-    }
-  });
-
-  agencyQ1QoqTotal = mockQ1QoqTotal;
-  agencyQ2QoqTotal = mockQ2QoqTotal;
-  expectedQ1QoqTotal = 503708883; // default mock expected Q1
-  expectedQ2QoqTotal = 559924393; // default mock expected Q2
-  agencyGrowthRate = agencyQ1QoqTotal > 0 ? (agencyQ2QoqTotal / agencyQ1QoqTotal - 1) : 0;
-  
-  q1ChartValues = {
-    'group 1': 5506674,
-    'group 2': 17493317,
-    'group 3': 490090134,
-    'group 4': 21605441
-  };
-  q2ReferenceDate = '260513';
-  
-  updateDbStatusUI('샘플', new Date());
-  updateFilterDropdowns();
-  renderDashboard();
-
-  // Hide empty state, show grid
-  document.getElementById('dashboard-empty-state').classList.add('hidden');
-  document.getElementById('dashboard-content-grid').classList.remove('hidden');
-  
-  hideLoading();
-}
-
 // ==========================================================================
 // Utility Helpers
 // ==========================================================================
+
+function updatePaceUI() {
+  const paceValEl = document.getElementById('pace-value');
+  if (paceValEl) {
+    const pacePercent = (q2ElapsedDays / 90) * 100;
+    paceValEl.textContent = pacePercent.toFixed(2) + '%';
+  }
+}
 
 // Format numeric values to Korean Won (KRW) currency format
 function formatKRW(num) {

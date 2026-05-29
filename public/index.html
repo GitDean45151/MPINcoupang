@@ -57,9 +57,10 @@
       </div>
       
       <div class="header-actions">
-        <button id="generate-mock-btn" class="btn-secondary-compact" title="샘플 데이터 테스트">
-          🧪 샘플 데이터 테스트
-        </button>
+        <div class="pace-widget" id="pace-widget">
+          <span class="pace-label">목표 달성 페이스</span>
+          <span class="pace-value" id="pace-value">0.00%</span>
+        </div>
         <button id="theme-toggle" class="btn-icon-secondary" title="테마 변경">
           <span class="icon-sun">☀️</span>
           <span class="icon-moon">🌙</span>
@@ -174,7 +175,7 @@
                       <th data-sort="q1" class="sortable text-right">1Q 매출 <span class="sort-icon"></span></th>
                       <th data-sort="q2" class="sortable text-right">2Q 매출 <span class="sort-icon"></span></th>
                       <th data-sort="diff" class="sortable text-right">매출 증감액 <span class="sort-icon"></span></th>
-                      <th data-sort="growth" class="sortable text-right">평균 증감률 <span class="sort-icon"></span></th>
+                      <th data-sort="progress" class="sortable text-right">평균 진도율 <span class="sort-icon"></span></th>
                       <th data-sort="commission15" class="sortable text-right">신규 수수료 합계 <span class="sort-icon"></span></th>
                       <th data-sort="qoqCommission" class="sortable text-right">QoQ 수수료 합계 <span class="sort-icon"></span></th>
                       <th data-sort="incentive" class="sortable text-right">마케터 인센티브 합계 <span class="sort-icon"></span></th>
@@ -194,7 +195,7 @@
               <div class="card-header grid-header-actions">
                 <div>
                   <h3>📋 ID별 상세 커미션 리포트</h3>
-                  <span class="card-subtitle">각 벤더 ID별 매출 추이, 증감률 및 수수료/인센티브 세부 산정 결과</span>
+                  <span class="card-subtitle">각 벤더 ID별 매출 추이, 진도율 및 수수료/인센티브 세부 산정 결과</span>
                 </div>
                 <div class="grid-controls">
                   <div class="search-box">
@@ -223,7 +224,7 @@
                       <th>커미션 그룹</th>
                       <th class="text-right">1Q 매출</th>
                       <th class="text-right">2Q 매출</th>
-                      <th class="text-right">매출 증감률</th>
+                      <th class="text-right">매출 진도율</th>
                       <th class="text-center">신규대상</th>
                       <th class="text-right">신규 수수료</th>
                       <th class="text-center">QoQ 대상</th>

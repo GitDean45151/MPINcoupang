@@ -154,7 +154,17 @@ function performJoinsAndCalculations() {
   }
 
   // Calculate dynamic baseline metrics based on the new rules
-  expectedQ1QoqTotal = q1QoqTotalFromFile; // sum of QoQ growth 벤더 이번 분기 광고비 (₩503,708,883)
+  if (rawSheets.q2.length === 0) {
+    expectedQ1QoqTotal = 0;
+    expectedQ2QoqTotal = 0;
+    agencyGrowthRate = 0;
+    agencyQoqRate = 0;
+    agencyIncentiveRate = 0;
+    agencyQ1QoqTotal = 0;
+    currentQ1QoqTotal = 0;
+  } else {
+    expectedQ1QoqTotal = q1QoqTotalFromFile;
+  }
   
   let expectedQ2Sum = 0;
   processedVendors.forEach(vendor => {
@@ -621,22 +631,22 @@ function loadAndInitializeData() {
         }
       } catch (err) {}
     }
-  } else {
-    const defaultSalesPath = path.join(__dirname, '260515_MP.xlsx');
-    if (fs.existsSync(defaultSalesPath)) {
-      factFilePath = defaultSalesPath;
-      filenameForDate = '260515_MP.xlsx';
-      console.log(`Found default sales file at ${defaultSalesPath}`);
-    } else {
-      console.warn('Neither uploaded nor default sales file found. Falling back to coupang.xlsx sheet 2Q.');
-    }
-  }
 
-  // Parse Q2 elapsed/total days and reference date dynamically
-  const daysInfo = getQ2DaysFromFilename(filenameForDate);
-  q2ElapsedDays = daysInfo.elapsedDays;
-  q2TotalDays = daysInfo.totalDays;
-  q2ReferenceDate = daysInfo.referenceDate;
+    // Parse Q2 elapsed/total days and reference date dynamically
+    const daysInfo = getQ2DaysFromFilename(filenameForDate);
+    q2ElapsedDays = daysInfo.elapsedDays;
+    q2TotalDays = daysInfo.totalDays;
+    q2ReferenceDate = daysInfo.referenceDate;
+  } else {
+    console.log('No uploaded sales file found. Dashboard initialized with 0 data.');
+    rawSheets.q2 = [];
+    factFilePath = null;
+    q2ElapsedDays = 0;
+    q2TotalDays = 91;
+    q2ReferenceDate = '적용 없음';
+    factLoaded = true;
+    currentQ1QoqTotal = 0;
+  }
 
   try {
     if (factFilePath === COUPANG_FILE_PATH) {
@@ -650,7 +660,7 @@ function loadAndInitializeData() {
         }).filter(row => /^A\d+$/.test(row.vendorid));
         factLoaded = true;
       }
-    } else {
+    } else if (factFilePath) {
       console.log(`Preprocessing sales Fact Table from ${factFilePath}...`);
       rawSheets.q2 = preprocessSalesFile(factFilePath);
 
@@ -659,6 +669,8 @@ function loadAndInitializeData() {
       if (dynamicQ1 !== null) {
         currentQ1QoqTotal = dynamicQ1;
         console.log(`Found currentQ1QoqTotal dynamically: ${currentQ1QoqTotal}`);
+      } else {
+        currentQ1QoqTotal = 242727142; // default fallback if we have a file but extraction returned null
       }
 
       factLoaded = true;
@@ -692,7 +704,7 @@ if (!fs.existsSync(uploadsDir)) {
  * Returns the cached, fully joined and calculated rows
  */
 app.get('/api/base-data', (req, res) => {
-  if (joinedRecords.length === 0) {
+  if (rawSheets.q1.length === 0 || rawSheets.seller.length === 0) {
     return res.status(500).json({ error: 'Base data not loaded or failed to parse coupang.xlsx' });
   }
   const latestSalesPath = path.join(__dirname, 'uploads', 'latest_sales.xlsx');
@@ -716,7 +728,9 @@ app.get('/api/base-data', (req, res) => {
       'group 3': q1Group3AdSpend,
       'group 4': q1Group4AdSpend
     },
-    q2ReferenceDate
+    q2ReferenceDate,
+    q2ElapsedDays,
+    q2TotalDays
   });
 });
 
@@ -766,6 +780,8 @@ app.post('/api/upload-update', upload.single('updateFile'), (req, res) => {
     if (dynamicQ1 !== null) {
       currentQ1QoqTotal = dynamicQ1;
       console.log(`Updated currentQ1QoqTotal dynamically from upload: ${currentQ1QoqTotal}`);
+    } else {
+      currentQ1QoqTotal = 242727142; // default fallback
     }
 
     // Perform joins and calculations
@@ -791,7 +807,9 @@ app.post('/api/upload-update', upload.single('updateFile'), (req, res) => {
         'group 3': q1Group3AdSpend,
         'group 4': q1Group4AdSpend
       },
-      q2ReferenceDate
+      q2ReferenceDate,
+      q2ElapsedDays,
+      q2TotalDays
     });
   } catch (error) {
     console.error('Error processing sales update upload:', error);
@@ -838,7 +856,9 @@ app.post('/api/reset-updates', (req, res) => {
         'group 3': q1Group3AdSpend,
         'group 4': q1Group4AdSpend
       },
-      q2ReferenceDate
+      q2ReferenceDate,
+      q2ElapsedDays,
+      q2TotalDays
     });
   } catch (error) {
     res.status(500).json({ error: `Reset failed: ${error.message}` });

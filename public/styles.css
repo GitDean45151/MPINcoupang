@@ -1250,3 +1250,37 @@ body.light-mode .btn-secondary-compact:hover {
 .file-status-header-text.error {
   color: var(--danger);
 }
+
+/* ==========================================================================
+   Pace Widget Styles
+   ========================================================================== */
+.pace-widget {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 4px 12px;
+  min-width: 120px;
+}
+
+body.light-mode .pace-widget {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.pace-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pace-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-secondary);
+  font-family: var(--font-label);
+}
